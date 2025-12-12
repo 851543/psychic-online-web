@@ -1,7 +1,7 @@
 <template>
   <div class="workspace">
     <div class="banner">
-      <span class="primary-title">机构成员</span>
+      <span class="primary-title"></span>
       <el-button type="primary" size="medium" class="btn-add el-button" @click="handleShowDlg">+绑定用户</el-button>
     </div>
 

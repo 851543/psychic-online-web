@@ -1,7 +1,6 @@
 import axios, { AxiosRequestConfig, Method } from 'axios'
 import { Message, MessageBox } from 'element-ui'
-import { getToken } from '@/utils/cookies'
-
+import { getToken,removeToken,removeName } from '@/utils/cookies'
 const service = axios.create({
   baseURL: '/api',
   timeout: 5000 * 5
@@ -32,42 +31,16 @@ service.interceptors.request.use(
 // Response interceptors
 service.interceptors.response.use(
   response => response,
-  // response => {
-  // 	const res = response.data;
-  // 	if (res.code !== 200) {
-  // 		Message({
-  // 			message: res.message || 'Error',
-  // 			type: 'error',
-  // 			duration: 5 * 1000,
-  // 		});
-  // 		5001: token过期
-  // 		5002: 无效token
-  // 		5003: token校验异常
-  // 		if (res.code === 5001 || res.code === 5002 || res.code === 5003) {
-  // 			MessageBox.confirm('You have been logged out, try to login again.', 'Log out', {
-  // 				confirmButtonText: 'Relogin',
-  // 				cancelButtonText: 'Cancel',
-  // 				type: 'warning',
-  // 			}).then(() => {
-  // 				UserModule.ResetToken();
-  // 				location.reload(); // To prevent bugs from vue-router
-  // 			});
-  // 		}
-  // 		return Promise.reject(new Error(res.message || 'Error'));
-  // 	} else {
-  // 		return response.data;
-  // 	}
-  // },
   error => {
-    // debugger
-    
     Message({
       message: error.response.data.errMessage || error.message,
       type: 'error',
       duration: 5 * 1000
     })
-    if(error.response.status=="401" && error.response.data.errMessage=='没有认证'){
-      window.location='http://localhost:88/sign.html'
+    if (error.response.status == '401') {
+      removeToken()
+      removeName()
+      window.location.href = 'http://localhost:88/sign.html'
     }
     return Promise.reject(error)
   }
@@ -88,7 +61,6 @@ export const createAPI = (
   if (method != 'get' && data !== undefined) {
     config.data = data
   }
-
   return service(config)
 }
 
