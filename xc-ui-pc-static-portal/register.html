@@ -46,13 +46,22 @@
                     </li>
                     <li>
                         <div class="form-group">
+                            <label class="col-sm-3 control-label">邮箱</label>
+                            <div class="col-sm-9">
+                                <input type="text" class="form-control" name="email" placeholder="请输入邮箱" v-model="formdata.email">
+                                <span class="verif-span"></span>
+                            </div>
+                        </div>
+                    </li>
+                    <!-- <li>
+                        <div class="form-group">
                             <label class="col-sm-3 control-label">手机号码</label>
                             <div class="col-sm-9">
                                 <input type="text" class="form-control" name="cellphone" placeholder="请输入手机号码" v-model="formdata.cellphone">
                                 <span class="verif-span"></span>
                             </div>
                         </div>
-                    </li>
+                    </li> -->
                     <li>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">验证码</label>
@@ -73,7 +82,7 @@
                             </div>
                         </div>
                     </li>
-                    <li>
+                    <!-- <li>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">昵称</label>
                             <div class="col-sm-9">
@@ -81,8 +90,8 @@
                                 <span class="verif-span"></span>
                             </div>
                         </div>
-                    </li>
-                    <li>
+                    </li> -->
+                    <!-- <li>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">邮箱</label>
                             <div class="col-sm-9">
@@ -90,7 +99,7 @@
                                 <span class="verif-span"></span>
                             </div>
                         </div>
-                    </li>
+                    </li> -->
                     <li>
                         <div class="form-group">
                             <label class="col-sm-3 control-label">密码</label>
@@ -136,8 +145,12 @@
 
         <script>
             /*手机验证码*/
-            const getCheckCodeByCellphone = (cellphone) => {
-                return  requestPostForm('/api/checkcode/phone?param1='+cellphone,{});
+            // const getCheckCodeByCellphone = (cellphone) => {
+            //     return  requestPostForm('/api/checkcode/phone?param1='+cellphone,{});
+            // }
+            /*邮箱验证码*/
+            const getCheckCodeByEmail = (email) => {
+                return  requestPostForm('/api/checkcode/email?param1='+email,{});
             }
 
             /*注册*/
@@ -149,10 +162,10 @@
                              el: "#registerarea", 
                              data: {
                                formdata:{
-                                   cellphone:'',
+                                   // cellphone:'',
                                    username:'',
                                    email:'',
-                                   nickname:'',
+                                   // nickname:'',
                                    password:'',
                                    confirmpwd:'',
                                    checkcodekey:'',
@@ -165,17 +178,17 @@
                                   if(countdowntime>0){
                                       return;
                                   }
-                                  if(!this.formdata.cellphone){
-                                    this.$message.error('请输入手机号')
+                                  if(!this.formdata.email){
+                                    this.$message.error('请输入邮箱')
                                     return ;
                                   }
-                                  //手机找回
-                                  getCheckCodeByCellphone(this.formdata.cellphone).then(res=>{
+                                  //邮箱验证码
+                                  getCheckCodeByEmail(this.formdata.email).then(res=>{
                                           //倒计时
                                           this.countdown()
                                           if(res&&res.key){
                                               this.formdata.checkcodekey=res.key
-                                              this.$message.success('向手机发送验证码成功，请查收')
+                                              this.$message.success('向邮箱发送验证码成功，请查收')
                                           }
                                          
                                       }).catch(error=>{
@@ -205,8 +218,9 @@
                               registerSubmit(){
                                 registerfun(this.formdata).then(res=>{
                                     this.$message.success('注册成功请登录')
+                                    window.location = "http://localhost:88/sign.html"
                                   }).catch(error=>{
-          
+                                    this.$message.error(error.response.data.errMessage)
                                   })
                               }
                  

@@ -28,6 +28,20 @@ export async function findUserByPhone(
 }
 
 /**
+ * Finds user by email 根据邮箱查询用户
+ * @param email 邮箱地址
+ * @returns user by email
+ */
+export async function findUserByEmail(
+  email: string
+): Promise<IMemberDTO> {
+  const { data } = await createAPI(`/learning/xc-member/get-by-email`, 'get', {
+    email
+  })
+  return data
+}
+
+/**
  * Binds user 绑定用户
  * @param phone 电话号码
  * @param userId 用户id

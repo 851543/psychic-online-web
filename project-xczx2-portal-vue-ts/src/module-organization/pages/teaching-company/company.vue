@@ -27,21 +27,21 @@
         <el-form-item label="机构名称：" prop="name">
           <el-input v-model="companyData.name" :disabled="!isEdit"></el-input>
         </el-form-item>
-        <el-form-item label="机构所在地区：" prop="address">
+        <!-- <el-form-item label="机构所在地区：" prop="address">
           <el-input v-model="companyData.address" :disabled="!isEdit"></el-input>
-        </el-form-item>
-        <el-form-item label="机构联系方式：" prop="phone">
+        </el-form-item> -->
+        <!-- <el-form-item label="机构联系方式：" prop="phone">
           <el-input v-model="companyData.phone" :disabled="!isEdit"></el-input>
-        </el-form-item>
+        </el-form-item> -->
         <el-form-item label="机构邮箱：" prop="email">
           <el-input v-model="companyData.email" :disabled="!isEdit"></el-input>
         </el-form-item>
-        <el-form-item label="机构简介：" prop="briefIntro">
-          <el-input v-model="companyData.briefIntro" :disabled="!isEdit"></el-input>
+        <el-form-item label="机构简介：" prop="intro">
+          <el-input v-model="companyData.intro" :disabled="!isEdit"></el-input>
         </el-form-item>
-        <el-form-item label="课程类目：" prop="mainCategory">
+        <!-- <el-form-item label="课程类目：" prop="mainCategory">
           <el-input v-model="companyData.mainCategory" :disabled="!isEdit"></el-input>
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
     </div>
     <!-- end -->

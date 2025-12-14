@@ -4,14 +4,42 @@
       <img class="logo" src="@/assets/img/logo@2x.png" />
     </div>
     <div class="right">
-      <div class="top">北京博学谷科技有限公司</div>
+      <div class="top">{{ companyData.name || companyData.title }}</div>
       <div class="bottom">
         <span class="create-time">创建时间：2016-12-12</span>
-        <span class="authentication">未认证</span>
+        <!-- <span class="authentication">未认证</span> -->
       </div>
     </div>
   </div>
 </template>
+
+<script lang="ts">
+import { Component, Vue } from "vue-property-decorator";
+import { getCompany } from '@/api/teaching-company';
+import { ITeachingCompany } from '@/entity/teaching-company';
+
+@Component({
+  name: "OrgBanner"
+})
+export default class extends Vue {
+  private companyData: ITeachingCompany = {
+    address: '',
+    name: '',
+    phone: '',
+    title: '',
+    verifyCode: '',
+    verifyKey: ''
+  }
+
+  private async getDate() {
+    this.companyData = await getCompany();
+  }
+
+  created() {
+    this.getDate();
+  }
+}
+</script>
 
 <style lang="scss" scoped>
 .org-banner {
@@ -69,12 +97,3 @@
   }
 }
 </style>
-
-<script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
-
-@Component({
-  name: "OrgBanner"
-})
-export default class extends Vue {}
-</script>

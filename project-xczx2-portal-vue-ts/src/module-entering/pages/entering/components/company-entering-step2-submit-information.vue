@@ -37,17 +37,17 @@
     <div class="title">课堂信息</div>
     <el-divider></el-divider>
     <el-form ref="form2" :model="form" :rules="rules" class="form" label-width="200px">
-      <el-form-item label="机构图标：" prop="logo">
+      <!-- <el-form-item label="机构图标：" prop="logo">
         <common-entering-step2-upload-image :imageUrl.sync="form.logo">尺寸大于130X130，小于500X500</common-entering-step2-upload-image>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item label="机构名称：" prop="title">
         <el-input v-model="form.title" placeholder="请填写机构名称"></el-input>
         <br />
         <p class="el-upload__tip" style>注：机构名称和机构LOGO名称与营业执照名称一致或有营业执照的关键字，如不一致需提供商标注册权</p>
       </el-form-item>
-      <el-form-item label="商标注册证：" prop="trademarkPic">
+      <!-- <el-form-item label="商标注册证：" prop="trademarkPic">
         <common-entering-step2-upload-image :imageUrl.sync="form.trademarkPic">请上传商标注册证</common-entering-step2-upload-image>
-      </el-form-item>
+      </el-form-item> -->
       <el-form-item label="机构简介：" prop="intro">
         <el-input
           type="textarea"
@@ -58,12 +58,12 @@
           show-word-limit
         ></el-input>
       </el-form-item>
-      <el-form-item label="一句话简介：" prop="briefIntro">
+      <!-- <el-form-item label="一句话简介：" prop="briefIntro">
         <el-input v-model="form.briefIntro" placeholder="请填写一句话简介"></el-input>
-      </el-form-item>
-      <el-form-item label="主营类目：" prop="mainCategory">
+      </el-form-item> -->
+      <!-- <el-form-item label="主营类目：" prop="mainCategory">
         <common-entering-step2-main-category :mainCategory.sync="form.mainCategory" />
-      </el-form-item>
+      </el-form-item> -->
     </el-form>
 
     <!-- 申请人信息 -->

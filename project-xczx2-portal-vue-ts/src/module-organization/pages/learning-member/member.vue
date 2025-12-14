@@ -32,9 +32,9 @@
       style="width: 100%"
       :header-cell-style="{textAlign: 'center'}"
     >
-      <el-table-column prop="name" label="成员" width="100" align="center"></el-table-column>
-      <el-table-column prop="phone" label="手机" width="150" align="center"></el-table-column>
-      <el-table-column prop="intro" label="成员介绍"></el-table-column>
+      <el-table-column prop="name" label="昵称" width="100" align="center"></el-table-column>
+      <el-table-column prop="email" label="邮箱" width="150" align="center"></el-table-column>
+      <el-table-column prop="intro" label="介绍"></el-table-column>
       <!-- <el-table-column prop="createDate" label="关联课程数" align="center" width="100"></el-table-column> -->
       <el-table-column label="操作" align="center" width="100">
         <template slot-scope="scope">

@@ -34,7 +34,7 @@
                 <div>
                     <p>登录密码</p>
                     <p>
-                        <input type="password" name="password" class="textInput" v-model="usernamejson.password">
+                        <input type="password" name="password" class="textInput" v-model="usernamejson.password" @keyup.enter="login()">
                         <span class="proof cl-orange"></span>
                     </p>
                 </div>
@@ -42,7 +42,7 @@
                     <p>验证码</p>
                     <p>
                         <img :src="checkcode_img"/>
-                        <input type="text" name="checkcode" v-model="usernamejson.checkcode">
+                        <input type="text" name="checkcode" v-model="usernamejson.checkcode" @keyup.enter="login()">
                         <input type="hidden" name="checkcodekey" v-model="usernamejson.checkcodekey">
                         <span class="proof cl-orange"></span>
                     </p>
