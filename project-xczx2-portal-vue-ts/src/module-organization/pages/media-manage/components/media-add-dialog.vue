@@ -90,6 +90,11 @@ export default class MediaAddDialog extends Vue {
       file,
       pieceSize: 5, //分片大小
       success: (data) => {
+        if(data.state == "warning"){
+          console.log("视频已存在")
+          file.percentage =  100
+          return
+        }
         file.percentage = (data.num/data.chunkCount) * 100
         console.log('success::' + data)
       },
@@ -100,6 +105,7 @@ export default class MediaAddDialog extends Vue {
         //   fileList.splice(i,1)
         // } })
         console.log('error::' + '视频分片上传失败')
+        this.$message.error("视频分片上传失败")
       }
     })
   }

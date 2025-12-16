@@ -46,18 +46,13 @@
       :header-cell-style="{textAlign: 'center'}"
     >
       <el-table-column prop="name" label="课程名称" width="250"></el-table-column>
-      <el-table-column prop="subsectionNum" label="任务数" align="center" width="100"></el-table-column>
-      <el-table-column label="创建时间" align="center" width="160">
-        <template slot-scope="scope">
-          <div>{{scope.row.createDate | dateTimeFormat}}</div>
-        </template>
-      </el-table-column>
+      <!-- <el-table-column prop="subsectionNum" label="任务数" align="center" width="100"></el-table-column> -->
       <!--<el-table-column prop="learners" label="报名人数" align="center" width="100"></el-table-column>-->
-      <el-table-column label="是否付费" align="center" width="80">
+      <!-- <el-table-column label="是否付费" align="center" width="80">
         <template slot-scope="scope">
           <div>{{scope.row.charge | chargeText}}</div>
         </template>
-      </el-table-column>
+      </el-table-column> -->
       <el-table-column label="审核状态" align="center" width="100">
         <template slot-scope="scope">
           <div>
@@ -81,6 +76,11 @@
       <el-table-column label="类型" align="center" width="80">
         <template slot-scope="scope">
           <div>{{scope.row.teachmode | teachmodeText}}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="创建时间" align="center" width="160">
+        <template slot-scope="scope">
+          <div>{{scope.row.createDate | dateTimeFormat}}</div>
         </template>
       </el-table-column>
       <!-- TODO: 增加友好提示 -->

@@ -35,9 +35,11 @@ export const uploadByPieces = ({ file, pieceSize = 5, success, error }:any) => {
         }
         // 上传前提交注册 - 接口调用
         upRegister(params).then(res => {
-          if (res.code == 0){
-            readChunkMD5(0)
+          if (res.code == 0 && res.result === true) {
+            success({ state: 'warning' })
+            return
           }
+          readChunkMD5(0)
         }).catch(err => error(err))
         
       });

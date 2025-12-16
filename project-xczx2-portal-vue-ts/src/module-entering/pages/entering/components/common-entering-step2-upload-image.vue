@@ -1,13 +1,13 @@
 <template>
   <div>
     <el-upload
-      action
       list-type="picture-card"
       accept=".jpg, .png, .bmp"
       :file-list="fileList"
       :before-upload="handleBeforeUpload"
       :on-success="handleUploadSuccess"
       :on-error="handleUploadError"
+      :headers="uploadHeaders"
       action="/api/media/upload/coursefile"
       name="filedata"
       :on-preview="handleOnPreview"
@@ -37,6 +37,7 @@ import {
 import * as qiniu from 'qiniu-js'
 import { IQnParamsDTO } from '@/entity/media-page-list'
 import { getQnParams } from '@/api/common'
+import { getToken } from '@/utils/cookies'
 
 @Component
 export default class CommonEnteringStep2UploadImage extends Vue {
@@ -105,8 +106,25 @@ export default class CommonEnteringStep2UploadImage extends Vue {
    * 文件上传失败钩子
    */
 
-  private handleUploadError(err){
-    console.log('上传失败:'+err.errMessage)
+  private handleUploadError(err: Error) {
+    // err.message 形如 `Error: {"errMessage":"上传文件到文件系统失败"}`
+    let msg = ''
+    const rawMessage = (err && (err as any).message) || ''
+    if (rawMessage) {
+      const possibleJson = rawMessage.replace(/^Error:\s*/, '').trim()
+      try {
+        const parsed = JSON.parse(possibleJson)
+        msg = parsed.errMessage || parsed.message || ''
+      } catch (e) {
+        msg = possibleJson
+      }
+    }
+    if (!msg && (err as any).errMessage) {
+      msg = (err as any).errMessage
+    }
+
+    this.$message.error(msg || '上传失败，请稍后重试')
+    console.error('上传失败:', err)
   }
   /**
    * 覆盖默认的上传行为
@@ -181,6 +199,16 @@ export default class CommonEnteringStep2UploadImage extends Vue {
     fileList: ElUploadInternalFileDetail[]
   ) {
     this.syncedImageUrl = ''
+  }
+
+  /**
+   * 上传请求头，补充鉴权信息
+   */
+  get uploadHeaders() {
+    const token = getToken()
+    const fallback = process.env.VUE_APP_SERVER_AUTHORIZATION
+    const value = token || fallback
+    return value ? { Authorization: `Bearer ${value}` } : {}
   }
 }
 </script>
