@@ -105,7 +105,7 @@
           <el-button
             type="text"
             size="mini"
-            :disabled="scope.row.auditStatus == '202003'"
+            :disabled="scope.row.auditStatus == '202003' || scope.row.auditStatus == '202004'"
             @click="handleCommit(scope.$index, scope.row)"
           >提交审核</el-button>
           <el-button
@@ -260,10 +260,11 @@ export default class extends mixins(MixinTools) {
           if (row.id) {
            commitCourse(row.id).then(() => {
             this.$message.success('提交成功')
+            this.getList()
            }
            
            )
-          this.getList()
+          
           }
         }).catch(() => {
           
@@ -284,10 +285,11 @@ export default class extends mixins(MixinTools) {
           if (row.id) {
             publishCourse(row.id).then(() => {
             this.$message.success('操作成功，请稍后在课程搜索中搜索课程')
+            this.getList()
            }
            
            )
-          this.getList()
+          
           }
         }).catch(() => {
           
@@ -316,10 +318,11 @@ export default class extends mixins(MixinTools) {
           if (row.id) {
             offlineCourse(row.id).then(() => {
             this.$message.success('操作成功，稍后在课程搜索中将无法查询到课程。')
+            this.getList()
            }
            
            )
-          this.getList()
+          
           }
         }).catch(() => {
           

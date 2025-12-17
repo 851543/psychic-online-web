@@ -95,7 +95,7 @@ export default class MediaAddDialog extends Vue {
           file.percentage =  100
           return
         }
-        file.percentage = (data.num/data.chunkCount) * 100
+        file.percentage = Math.round((data.num / data.chunkCount) * 100);
         console.log('success::' + data)
       },
       error: (e) => {
