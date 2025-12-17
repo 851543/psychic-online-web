@@ -106,7 +106,7 @@
                             <div class="recom-item" v-for="course in courseList" >
                                 <a :href="'/course/'+course.id+'.html'" target="_blank">
                                     <p>
-                                        <img :src="file_server+course.pic"  width="100%" alt=""></img>
+                                        <img :src="file_server+course.pic"  width="100%" alt="" @error="$event.target.src='/img/widget-titBg.png'"></img>
                                         <!--<span class="lab">HOT</span>-->
                                     </p>
                                     <ul>
@@ -119,7 +119,7 @@
                                         <li>
                                             <span v-if="course.charge=='201000'">免费</span>
                                             <span v-else>¥{{course.price}}</span>
-                                            <em> · </em> 1125人在学</li>
+                                            <em> · </em> {{course.students || getRandomStudentCount()}}人在学</li>
                                     </ul>
                                 </a>
                             </div>
@@ -271,7 +271,9 @@
                   stList:[]
               },
               methods: {
-                
+                getRandomStudentCount: function() {
+                    return typeof getRandomStudentCount === 'function' ? getRandomStudentCount() : Math.floor(Math.random() * 49000) + 1000;
+                },
                   submitSearch(mt,st,grade,sortType) {         
                     this.searchParams.mt = mt
                     this.searchParams.st = st 
@@ -298,7 +300,10 @@
                 console.log("keywords="+keywords)
                 if(keywords){
                     this.searchParams.keywords = keywords
-                    document.getElementById("keywords-text").value=keywords;
+                    var keywordsTextEl = document.getElementById("keywords-text");
+                    if(keywordsTextEl){
+                        keywordsTextEl.value=keywords;
+                    }
                 }
                 var grade = GetQueryString("grade");
                 if(grade){
@@ -306,19 +311,36 @@
                 }
                 var mt = GetQueryString("mt");
                 if(mt){
-                    this.searchParams.mt = mt
+                    this.searchParams.mt = decodeURIComponent(mt)
                 }
                 var st = GetQueryString("st");
                 if(st){
-                    this.searchParams.st = st
+                    this.searchParams.st = decodeURIComponent(st)
                 }
-                this.submitSearch(this.mt,this.st,this.grade)
+                // 使用 searchParams 中的值进行查询
+                this.submitSearch(this.searchParams.mt,this.searchParams.st,this.searchParams.grade)
                 
               },
               mounted(){
                  
               }
           })
+          
+          // 页面加载后填充静态的学习人数
+          $(document).ready(function() {
+              var getRandomCount = typeof getRandomStudentCount === 'function' ? getRandomStudentCount : function() {
+                  return Math.floor(Math.random() * 49000) + 1000;
+              };
+              
+              // 替换"人在学习"或"人在学"中的数字
+              $('li:contains("人在学习"), li:contains("人在学")').each(function() {
+                  var $this = $(this);
+                  var text = $this.html();
+                  // 匹配数字+人在学习/人在学的模式
+                  text = text.replace(/\d+(?=人在学习|人在学)/g, getRandomCount());
+                  $this.html(text);
+              });
+          });
 
       </script>
 </body>

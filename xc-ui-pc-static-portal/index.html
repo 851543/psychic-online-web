@@ -158,6 +158,15 @@
             padding: 0px;
             line-height: 16px;
         }
+        .teach-info li span {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
+            line-clamp: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.5;
+        }
     </style>
 </head>
 
@@ -211,25 +220,22 @@
                 <a href="#">全部课程</a>
             </div>
         </div>-->
-        <div class="my-class-box">
+        <div class="my-class-box" id="myCourseTableApp" v-if="hasCourseData">
             <div class="m-slideTop-personFunc">
                 <div class="m-slideTop-personFunc-f">
                     <div class="u-person-container">
                         <!-- <div class="u-person-title"><span>通灵学习IT精品课程<br>成就高薪就业</span></div> -->
                         <div class="title">我的课程表</div>
-                        <div class="courselist">
-                            <a href="#">
-                            <p>>程序语言设计</p>
+                        <div class="courselist" v-for="(course, index) in courseTableList" :key="index">
+                            <a :href="'/course/' + course.courseId + '.html'" v-if="course.courseId">
+                                <p>>{{ course.coursePubName || course.courseName || '课程名称' }}</p>
+                            </a>
+                            <a href="#" v-else>
+                                <p>>{{ course.coursePubName || course.courseName || '课程名称' }}</p>
                             </a>
                         </div>
-                        <div class="courselist">
-                            <a href="#"><p>>程序语言设计</p></a>
-                        </div>
-                        <div class="courselist">
-                            <a href="#"><p>>程序语言设计</p></a>
-                        </div>
                         <div class="navLoginBtn u-person-login" >
-                            <a href="#"> <span class="m-index-person-loginBtn">我的课程</span></a>
+                            <a href="/ucenter/index.html"> <span class="m-index-person-loginBtn">我的课程</span></a>
                         </div>
                         <!--<div class="u-person-word"><span>黑马程序员出品</span></div>-->
                     </div>
@@ -266,56 +272,30 @@
                 <li class="btn btn-primary"><a href="#">修改兴趣</a></li>-->
             </div>
         </div>
-        <div class="conten-list">
+        <div class="conten-list" id="recommendApp">
             <div class="Recommend">
-                <div class="title">精品推荐<a href="#" class="queryall">查看全部</a></div>
+                <div class="title">精品推荐<a href="/course/search.html" class="queryall">查看全部</a></div>
                 <div class="content">
-                    <div class="recom-item">
-                        <a href="#">
-                            <p><img src="img/widget-demo1.png" width="100%" alt=""><span class="lab">HOT</span></p>
+                    <div class="recom-item" v-for="(course, index) in recommendCourseList" :key="course.id">
+                        <a :href="'/course/' + course.id + '.html'" target="_blank">
+                            <p>
+                                <img :src="fileServer + course.pic" width="100%" height="145" alt="" v-if="course.pic" @error="$event.target.src='/img/widget-titBg.png'">
+                                <img src="img/widget-demo1.png" width="100%" height="145" alt="" v-else @error="$event.target.src='/img/widget-titBg.png'">
+                                <span class="lab" v-if="index < 3">HOT</span>
+                            </p>
                             <ul>
-                                <li><a href="/course/course_template.html" target="_blank">Think PHP 5.0 博客系统实战项目演练</a></li>
-                                <li><span>高级</span> <em> · </em> 1125人在学习</li>
+                                <li>
+                                    <span v-html="course.name"></span>
+                                </li>
+                                <li>
+                                    <span v-if="course.grade=='204001'">初级</span>
+                                    <span v-else-if="course.grade=='204002'">中级</span>
+                                    <span v-else>高级</span>
+                                    <em> · </em> {{course.students || getRandomStudentCount()}}人在学习
+                                </li>
                             </ul>
                         </a>
                     </div>
-                    <div class="recom-item">
-                        <a href="#">
-                            <p><img src="img/widget-demo2.png" width="100%" alt=""><span class="lab">HOT</span></p>
-                            <ul>
-                                <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                            </ul>
-                        </a>
-                    </div>
-                    <div class="recom-item">
-                        <a href="#">
-                            <p><img src="img/widget-demo3.png" width="100%" alt=""><span class="lab">HOT</span></p>
-                            <ul>
-                                <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                            </ul>
-                        </a>
-                    </div>
-                    <div class="recom-item">
-                        <a href="#">
-                            <p><img src="img/widget-demo4.png" width="100%" alt=""><span class="lab">HOT</span></p>
-                            <ul>
-                                <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                            </ul>
-                        </a>
-                    </div>
-                    <div class="recom-item">
-                        <a href="#">
-                            <p><img src="img/widget-demo1.png" width="100%" alt=""></p>
-                            <ul>
-                                <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                            </ul>
-                        </a>
-                    </div>
-
                 </div>
             </div>
 
@@ -324,11 +304,11 @@
                     Java工程师
                     <div class="course-nav">
                         <!--<span class="active">热门</span>-->
-                        <span><a href="#">基础课程</a></span>
-                        <span><a href="#">就业课程</a></span>
-                        <span><a href="#">高级课程</a></span>
+                        <span><a href="javascript:void(0)">基础课程</a></span>
+                        <span><a href="javascript:void(0)">就业课程</a></span>
+                        <span><a href="javascript:void(0)">高级课程</a></span>
                     </div>
-                    <a class="queryall" href="#">查看全部</a>
+                    <a class="queryall" href="/course/search.html">查看全部</a>
                 </div>
                 <div class="content">
                     <div class="cont-left">
@@ -336,39 +316,20 @@
                     </div>
                     <div class="cont-right">
                         <div><img src="img/widget-ind-top.png" width="100%" alt=""></div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
+                        <div class="recom-item" v-for="(course, index) in javaCourseList" :key="course.id">
+                            <a :href="'/course/' + course.id + '.html'" target="_blank">
+                                <p>
+                                    <img :src="fileServer + course.pic" width="100%" height="145" alt="" v-if="course.pic" @error="$event.target.src='/img/widget-titBg.png'">
+                                    <img src="img/widget-demo4.png" width="100%" height="145" alt="" v-else @error="$event.target.src='/img/widget-titBg.png'">
+                                </p>
                                 <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                                </ul>
-                            </a>
-                        </div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
-                                <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                                </ul>
-                            </a>
-                        </div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
-                                <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                                </ul>
-                            </a>
-                        </div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
-                                <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
+                                    <li><span v-html="course.name"></span></li>
+                                    <li>
+                                        <span v-if="course.grade=='204001'">初级</span>
+                                        <span v-else-if="course.grade=='204002'">中级</span>
+                                        <span v-else>高级</span>
+                                        <em> · </em> {{course.students || getRandomStudentCount()}}人在学习
+                                    </li>
                                 </ul>
                             </a>
                         </div>
@@ -381,11 +342,11 @@
                     PHP工程师
                     <div class="course-nav">
                         <!--<span class="active">热门</span>-->
-                        <span><a href="#">基础课程</a></span>
-                        <span><a href="#">就业课程</a></span>
-                        <span><a href="#">高级课程</a></span>
+                        <span><a href="javascript:void(0)">基础课程</a></span>
+                        <span><a href="javascript:void(0)">就业课程</a></span>
+                        <span><a href="javascript:void(0)">高级课程</a></span>
                     </div>
-                    <a class="queryall" href="#">查看全部</a>
+                    <a class="queryall" href="/course/search.html">查看全部</a>
                 </div>
                 <div class="content">
                     <div class="cont-left">
@@ -393,39 +354,20 @@
                     </div>
                     <div class="cont-right">
                         <div><img src="img/widget-ind-top1.png" width="100%" alt=""></div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
+                        <div class="recom-item" v-for="(course, index) in phpCourseList" :key="course.id">
+                            <a :href="'/course/' + course.id + '.html'" target="_blank">
+                                <p>
+                                    <img :src="fileServer + course.pic" width="100%" height="145" alt="" v-if="course.pic" @error="$event.target.src='/img/widget-titBg.png'">
+                                    <img src="img/widget-demo4.png" width="100%" height="145" alt="" v-else @error="$event.target.src='/img/widget-titBg.png'">
+                                </p>
                                 <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                                </ul>
-                            </a>
-                        </div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
-                                <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                                </ul>
-                            </a>
-                        </div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
-                                <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
-                                </ul>
-                            </a>
-                        </div>
-                        <div class="recom-item">
-                            <a href="#">
-                                <p><img src="img/widget-demo4.png" width="100%" alt=""></p>
-                                <ul>
-                                    <li>Think PHP 5.0 博客系统实战项目演练 </li>
-                                    <li><span>高级</span> <em> · </em> 1125人在学习</li>
+                                    <li><span v-html="course.name"></span></li>
+                                    <li>
+                                        <span v-if="course.grade=='204001'">初级</span>
+                                        <span v-else-if="course.grade=='204002'">中级</span>
+                                        <span v-else>高级</span>
+                                        <em> · </em> {{course.students || getRandomStudentCount()}}人在学习
+                                    </li>
                                 </ul>
                             </a>
                         </div>
@@ -582,89 +524,78 @@
         </div>-->
 
     </div>
-    <div class="container">
+    <div class="container" style="margin-top:20px;">
         <div class="teacher-list text-center">
             <div class="title"> 名师大咖
-                <a class="queryall" href="#">申请加入</a>
+                <a class="queryall" href="javascript:void(0)">申请加入</a>
             </div>
             <div class="first-box">
                 <div class="teach-item">
-                    <a href="#">
-                    <img src="img/teacherpic.jpg" width="230px" height="230px" alt="">
-                    <span class="lab">28555学习过</span>
+                    <a href="javascript:void(0)">
+                    <img src="/img/demo/ajun.png" width="215px" height="230px" alt="">
                     <ul class="teach-info">
-                        <li>XX老师 <span>Java EE</span></li>
+                        <li>阿俊老师 <span>拥有10年以上全栈开发经验，精通前后端技术栈。擅长React、Vue、Node.js、Spring Boot等主流框架，曾主导多个大型企业级项目开发，具备丰富的架构设计和团队管理经验。深度掌握微服务架构、容器化部署、DevOps流程，熟悉MySQL、MongoDB、Redis等数据库技术，对高并发系统设计有独到见解。教学风格深入浅出，注重实战项目演练，帮助学员从零基础到全栈工程师的完整成长路径。</span></li>
                     </ul>
                     </a>
                 </div>
                 <div class="teach-item">
-                    <a href="#">
-                        <img src="img/teacherpic.jpg" width="230px" height="230px" alt="">
-                        <span class="lab">28555学习过</span>
+                    <a href="javascript:void(0)">
+                        <img src="/img/demo/zhubb.png" width="215px" height="230px" alt="">
                         <ul class="teach-info">
-                            <li>XX老师 <span>Java EE</span></li>
+                            <li>猪猪老师 <span>资深Java开发工程师，8年企业级Java应用开发经验。精通JavaSE、JavaEE、Spring全家桶、MyBatis、Redis等核心技术，熟悉微服务架构和分布式系统设计，曾参与多个高并发电商平台项目。深入研究JVM性能调优、多线程并发编程、分布式事务处理等高级技术，掌握Spring Cloud、Dubbo等微服务框架，具备大型互联网项目架构设计能力。教学注重理论与实践结合，通过真实项目案例帮助学员掌握企业级开发技能，已培养数千名Java开发工程师。</span></li>
                         </ul>
                     </a>
                 </div>
                 <div class="teach-item">
-                    <a href="#">
-                        <img src="img/teacherpic.jpg" width="230px" height="230px" alt="">
-                        <span class="lab">28555学习过</span>
+                    <a href="javascript:void(0)">
+                        <img src="/img/demo/pe.png" width="215px" height="230px" alt="">
                         <ul class="teach-info">
-                            <li>XX老师 <span>Java EE</span></li>
+                            <li>彭彭老师 <span>软件测试领域专家，拥有7年测试开发经验。精通功能测试、自动化测试、性能测试，熟练掌握Selenium、JMeter、Postman等测试工具，擅长测试框架设计和CI/CD流程优化。深度掌握Python、Java测试开发，熟悉接口测试、移动端测试、安全测试等专项测试技术，具备丰富的测试团队管理和质量体系建设经验。教学风格严谨细致，注重培养学员的测试思维和问题分析能力，通过大量实战项目帮助学员快速掌握企业级测试技能，助力学员在测试领域快速成长。</span></li>
                         </ul>
                     </a>
                 </div>
                 <div class="teach-item">
-                    <a href="#">
-                        <img src="img/teacherpic.jpg" width="230px" height="230px" alt="">
-                        <span class="lab">28555学习过</span>
+                    <a href="javascript:void(0)">
+                        <img src="/img/demo/yuge.png" width="215px" height="230px" alt="">
                         <ul class="teach-info">
-                            <li>XX老师 <span>Java EE教学经验丰富</span></li>
+                            <li>雨雨老师 <span>前端开发技术专家，6年前端开发经验。精通HTML5、CSS3、JavaScript、TypeScript，熟练掌握Vue.js、React、Angular等主流框架，擅长移动端开发和响应式设计，注重用户体验优化。深度掌握Webpack、Vite等构建工具，熟悉Node.js服务端开发，具备小程序、H5、PC端全平台开发能力。对前端工程化、组件化开发、性能优化有深入研究，曾参与多个知名互联网产品的前端架构设计。教学注重培养学员的前端工程思维和代码规范意识，通过项目驱动式教学帮助学员掌握现代前端开发技术栈。</span></li>
                         </ul>
                     </a>
                 </div>
                 <div class="teach-item">
-                    <a href="#">
-                        <img src="img/teacherpic.jpg" width="230px" height="230px" alt="">
-                        <span class="lab">28555学习过</span>
+                    <a href="javascript:void(0)">
+                        <img src="/img/demo/weidong.png" width="230px" height="230px" alt="">
                         <ul class="teach-info">
-                            <li>XX老师 <span>Java EE</span></li>
+                            <li>伟伟老师 <span>Python技术专家，拥有9年Python开发与教学经验。精通Python核心语法、面向对象编程、函数式编程，熟练掌握Django、Flask、FastAPI等Web框架，深度掌握爬虫开发、数据分析、机器学习等技术领域。熟悉NumPy、Pandas、Matplotlib等数据科学库，具备TensorFlow、PyTorch等深度学习框架实战经验。曾主导多个大数据分析和AI项目开发，对Python在企业级应用中的最佳实践有丰富经验。教学风格生动有趣，注重培养学员的编程思维和解决问题的能力，通过循序渐进的项目实战帮助学员从Python入门到高级应用的完整掌握。</span></li>
                         </ul>
                     </a>
                 </div>
                 <div class="clearfix"></div>
             </div>
-            <!--<div class="two-box">
+            <div class="two-box">
                 <div class="teach-item-adv">
                     <img src="img/widget-teach-adv.png" width="100%" alt="">
                 </div>
                 <div class="teach-item">
-                    <img src="img/widget-teach2.png" width="100%" alt="">
-                    <span class="lab">28555学习过</span>
+                    <img src="/img/demo/teach1.jpg" width="100%" height="302px" alt="">
                     <ul class="teach-info">
-                        <li>崔老师 <span>Java EE</span></li>
-                        <li>从事多年Java软件开发及相关教育工作，熟悉JavaSE、JavaEE、Struts1,2、Spring……</li>
+                        <li>覃老师 <span>Java Web开发、数据库设计与优化、服务器端编程，对Java技术栈有全面深入的理解。教学经验丰富，注重基础知识的扎实掌握，通过循序渐进的方式帮助学员建立完整的Java知识体系，已成功培养众多Java开发人才。</span></li>
                     </ul>
                 </div>
                 <div class="teach-item">
-                    <img src="img/widget-teach3.png" width="100%" alt="">
-                    <span class="lab">28555学习过</span>
+                    <img src="/img/demo/teach2.jpg" width="100%" height="302px" alt="">
                     <ul class="teach-info">
-                        <li>崔老师 <span>Java EE</span></li>
-                        <li>从事多年Java软件开发及相关教育工作，熟悉JavaSE、JavaEE、Struts1,2、Spring……</li>
+                        <li>朱老师 <span>Spring Boot、Spring Cloud微服务架构，熟悉Redis缓存、RabbitMQ消息队列、Elasticsearch搜索引擎等中间件技术。具备大型分布式系统设计能力，曾主导多个高并发、高可用的互联网项目。对JVM调优、多线程并发、分布式事务有深入研究，擅长解决复杂技术问题。教学风格严谨务实，注重培养学员的工程实践能力和问题解决思维，通过真实项目案例帮助学员快速提升技术水平。</span></li>
                     </ul>
                 </div>
                 <div class="teach-item">
-                    <img src="img/widget-teach4.png" width="100%" alt="">
-                    <span class="lab">28555学习过</span>
+                    <img src="/img/demo/teach3.jpg" width="100%" height="302px" alt="">
                     <ul class="teach-info">
-                        <li>崔老师 <span>Java EE</span></li>
-                        <li>从事多年Java软件开发及相关教育工作，熟悉JavaSE、JavaEE、Struts1,2、Spring从事多年Java软件开发及相关教育工作，熟悉JavaSE、JavaEE、Struts1,2、Spring从事多年Java软件开发及相关教育工作，熟悉JavaSE、JavaEE、Struts1,2、Spring……</li>
+                        <li>党老师 <span>Servlet、JSP、JDBC、Hibernate、Spring、MyBatis等框架，熟悉Maven、Git等开发工具。具备丰富的电商、金融、教育等行业项目经验，擅长系统架构设计、性能优化、安全防护。对Java技术发展趋势有敏锐洞察，持续关注新技术动态。教学注重理论与实践相结合，通过项目驱动式教学帮助学员掌握企业级开发技能，培养学员的编程思维和代码规范意识，助力学员在Java开发领域快速成长。</span></li>
                     </ul>
                 </div>
                 <div class="clearfix"></div>
-            </div>-->
+            </div>
         </div>
     </div>
     <!-- 页面底部 -->
@@ -719,4 +650,150 @@
         })
     </script>
     <script src="js/page-learing-index.js"></script>
+    <script>
+        /*我的课程表*/
+        const myCourseTablesFun = (params) => {
+            return requestGet('/api/learning/mycoursetable', params);
+        }
+        
+        var myCourseTableVm = new Vue({
+            el: "#myCourseTableApp",
+            data: {
+                courseTableList: [],
+                hasCourseData: false
+            },
+            methods: {
+                loadMyCourseTable() {
+                    myCourseTablesFun({}).then(res => {
+                        console.log('我的课程表数据:', res);
+                        // 检查是否有数据
+                        if (res && res.items && res.items.length > 0) {
+                            // 只取前3个课程显示
+                            this.courseTableList = res.items.slice(0, 3);
+                            this.hasCourseData = true;
+                        } else {
+                            this.hasCourseData = false;
+                        }
+                    }).catch(error => {
+                        console.error('加载我的课程表失败:', error);
+                        // 如果接口报错（比如未登录），也不显示课程表
+                        this.hasCourseData = false;
+                    });
+                }
+            },
+            created() {
+                this.loadMyCourseTable();
+            }
+        });
+        
+        /*精品推荐*/
+        const requestCourseList = (pageNo, pageSize, searchParams) => {
+            return requestGet('/api/search/course/list?pageNo=' + pageNo + '&pageSize=' + pageSize, searchParams);
+        }
+        
+        var recommendVm = new Vue({
+            el: "#recommendApp",
+            data: {
+                recommendCourseList: [],
+                javaCourseList: [],
+                phpCourseList: [],
+                fileServer: 'http://localhost:88'
+            },
+            methods: {
+                loadRecommendCourses() {
+                    // 加载精品推荐课程，默认加载5个
+                    const searchParams = {
+                        keywords: '',
+                        st: '',
+                        mt: '',
+                        grade: '',
+                        sortType: '1' // 可以设置排序方式，比如按热度排序
+                    };
+                    requestCourseList(1, 5, searchParams).then(res => {
+                        console.log('精品推荐数据:', res);
+                        if (res && res.items && res.items.length > 0) {
+                            this.recommendCourseList = res.items;
+                            // 调试：打印第一个课程的数据结构
+                            if (res.items.length > 0) {
+                                console.log('第一个课程数据:', res.items[0]);
+                                console.log('charge:', res.items[0].charge);
+                                console.log('price:', res.items[0].price);
+                            }
+                        }
+                    }).catch(error => {
+                        console.error('加载精品推荐失败:', error);
+                    });
+                },
+                loadJavaCourses() {
+                    // 加载Java分类课程，默认加载4个
+                    const searchParams = {
+                        keywords: '',
+                        st: 'Java',  // 小分类为Java
+                        mt: '',
+                        grade: '',
+                        sortType: '1'
+                    };
+                    requestCourseList(1, 4, searchParams).then(res => {
+                        console.log('Java课程数据:', res);
+                        if (res && res.items && res.items.length > 0) {
+                            this.javaCourseList = res.items;
+                        }
+                    }).catch(error => {
+                        console.error('加载Java课程失败:', error);
+                    });
+                },
+                loadPhpCourses() {
+                    // 加载编程开发大分类课程，默认加载4个
+                    const searchParams = {
+                        keywords: '',
+                        st: '',
+                        mt: '编程开发',  // 大分类为编程开发
+                        grade: '',
+                        sortType: '1'
+                    };
+                    requestCourseList(1, 4, searchParams).then(res => {
+                        console.log('编程开发课程数据:', res);
+                        if (res && res.items && res.items.length > 0) {
+                            this.phpCourseList = res.items;
+                        }
+                    }).catch(error => {
+                        console.error('加载编程开发课程失败:', error);
+                    });
+                },
+                getRandomStudentCount: function() {
+                    return typeof getRandomStudentCount === 'function' ? getRandomStudentCount() : Math.floor(Math.random() * 49000) + 1000;
+                }
+            },
+            created() {
+                this.loadRecommendCourses();
+                this.loadJavaCourses();
+                this.loadPhpCourses();
+            }
+        });
+        
+        // 页面加载后填充静态的学习人数
+        $(document).ready(function() {
+            var getRandomCount = typeof getRandomStudentCount === 'function' ? getRandomStudentCount : function() {
+                return Math.floor(Math.random() * 49000) + 1000;
+            };
+            
+            // 替换"人在学习"中的数字
+            $('li:contains("人在学习"), li:contains("人在学")').each(function() {
+                var $this = $(this);
+                var text = $this.html();
+                // 匹配数字+人在学习/人在学的模式
+                text = text.replace(/\d+(?=人在学习|人在学)/g, getRandomCount());
+                $this.html(text);
+            });
+            
+            // 替换"学习过"中的数字
+            $('.lab:contains("学习过")').each(function() {
+                var $this = $(this);
+                var text = $this.text();
+                // 匹配数字+学习过的模式
+                text = text.replace(/\d+(?=学习过)/g, getRandomCount());
+                $this.text(text);
+            });
+        });
+    </script>
 </body>

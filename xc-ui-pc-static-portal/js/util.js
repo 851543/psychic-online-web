@@ -158,3 +158,11 @@ function uuid() {
 function showlogin(){
     window.location = "http://localhost:88/sign.html?returnUrl="+ Base64.encode(window.location)
 }
+
+/**
+ * 生成随机学习人数
+ * @returns {Number} 随机人数
+ */
+function getRandomStudentCount() {
+    return Math.floor(Math.random() * 49000) + 1000;
+}
