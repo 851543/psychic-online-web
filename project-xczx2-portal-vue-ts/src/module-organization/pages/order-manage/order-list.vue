@@ -54,6 +54,7 @@
               clearable
             />
           </el-col>
+          <!-- 学员ID搜索暂时隐藏
           <el-col :span="4">
             <el-input
               v-model="listQueryData.userId"
@@ -62,6 +63,7 @@
               clearable
             />
           </el-col>
+          -->
           <el-col :span="2" style="text-align: right;">
             <el-button type="primary" size="medium" class="el-button" @click="getOrderPageList">查询</el-button>
           </el-col>
@@ -77,22 +79,24 @@
         style="width: 100%"
         :header-cell-style="{ textAlign: 'center' }"
       >
-        <el-table-column prop="orderNo" label="订单号" align="center"></el-table-column>
+        <el-table-column prop="id" label="订单号" align="center"></el-table-column>
 
         <el-table-column label="交易时间" align="center">
           <template slot-scope="scope">{{ scope.row.createDate | dateTimeFormat }}</template>
         </el-table-column>
 
+        <!-- 学员ID列暂时隐藏
         <el-table-column prop="userId" label="学员ID" align="center"></el-table-column>
+        -->
 
-        <el-table-column prop="coursePubName" label="课程名称" align="center"></el-table-column>
+        <el-table-column prop="orderName" label="课程名称" align="center"></el-table-column>
 
         <el-table-column label="交易金额" align="center">
-          <template slot-scope="scope">&#165;{{ scope.row.price.toFixed(2) }}</template>
+          <template slot-scope="scope">{{ scope.row.totalPrice != null ? scope.row.totalPrice.toFixed(2) : '0.00' }}</template>
         </el-table-column>
 
         <el-table-column label="结算金额" align="center">
-          <template slot-scope="scope">&#165;{{ scope.row.price.toFixed(2) }}</template>
+          <template slot-scope="scope">{{ scope.row.totalPrice != null ? scope.row.totalPrice.toFixed(2) : '0.00' }}</template>
         </el-table-column>
 
         <el-table-column prop="status" label="结算状态" align="center">
@@ -172,8 +176,21 @@ export default class OrderList extends Vue {
    */
   private async getOrderPageList() {
     this.listLoading = true
-    this.listResult = await getOrderPageList(this.listQuery, this.listQueryData)
-    this.listLoading = false
+    try {
+      this.listResult = await getOrderPageList(this.listQuery, this.listQueryData)
+      // 确保 listResult 有默认值
+      if (!this.listResult) {
+        this.listResult = { items: [], counts: 0 }
+      }
+      if (!this.listResult.items) {
+        this.listResult.items = []
+      }
+    } catch (error) {
+      console.error('获取订单列表失败:', error)
+      this.listResult = { items: [], counts: 0 }
+    } finally {
+      this.listLoading = false
+    }
   }
 
   /**

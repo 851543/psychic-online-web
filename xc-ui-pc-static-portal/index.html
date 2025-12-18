@@ -167,6 +167,73 @@
             text-overflow: ellipsis;
             line-height: 1.5;
         }
+
+        /* 我的课程表样式优化 */
+        .my-class-box {
+            width: 260px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .my-class-box .title {
+            background: linear-gradient(90deg, #00a4ff 0%, #38cfff 100%);
+            color: #fff;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 0;
+            letter-spacing: 2px;
+        }
+
+        .my-class-box .courselist {
+            padding: 10px 18px;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+
+        .my-class-box .courselist:last-of-type {
+            border-bottom: none;
+        }
+
+        .my-class-box .courselist a {
+            display: block;
+            color: #333;
+        }
+
+        .my-class-box .courselist p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+        }
+
+        /* 统一居中显示，去掉前面的点 */
+        .my-class-box .courselist p::before {
+            content: '';
+        }
+
+        .my-class-box .courselist:hover {
+            background: #f7fbff;
+        }
+
+        .my-class-box .courselist:hover p {
+            color: #00a4ff;
+        }
+
+        .my-class-box .navLoginBtn.u-person-login a {
+            color: #00a4ff;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .my-class-box .navLoginBtn.u-person-login a:hover {
+            background: #e6f6ff;
+        }
     </style>
 </head>
 
@@ -221,25 +288,19 @@
             </div>
         </div>-->
         <div class="my-class-box" id="myCourseTableApp" v-if="hasCourseData">
-            <div class="m-slideTop-personFunc">
-                <div class="m-slideTop-personFunc-f">
-                    <div class="u-person-container">
-                        <!-- <div class="u-person-title"><span>通灵学习IT精品课程<br>成就高薪就业</span></div> -->
-                        <div class="title">我的课程表</div>
-                        <div class="courselist" v-for="(course, index) in courseTableList" :key="index">
-                            <a :href="'/course/' + course.courseId + '.html'" v-if="course.courseId">
-                                <p>>{{ course.coursePubName || course.courseName || '课程名称' }}</p>
-                            </a>
-                            <a href="#" v-else>
-                                <p>>{{ course.coursePubName || course.courseName || '课程名称' }}</p>
-                            </a>
-                        </div>
-                        <div class="navLoginBtn u-person-login" >
-                            <a href="/ucenter/index.html"> <span class="m-index-person-loginBtn">我的课程</span></a>
-                        </div>
-                        <!--<div class="u-person-word"><span>黑马程序员出品</span></div>-->
-                    </div>
-                </div>
+            <div class="title">我的课程表</div>
+            <div class="courselist" v-for="(course, index) in courseTableList" :key="index">
+                <a :href="'/course/' + course.courseId + '.html'" v-if="course.courseId">
+                    <p>{{ course.coursePubName || course.courseName || '课程名称' }}</p>
+                </a>
+                <a href="javascript:void(0)" v-else>
+                    <p>{{ course.coursePubName || course.courseName || '课程名称' }}</p>
+                </a>
+            </div>
+            <div class="navLoginBtn u-person-login">
+                <a href="/ucenter/index.html">
+                    <span class="m-index-person-loginBtn">查看全部课程</span>
+                </a>
             </div>
         </div>
         <!--未登录显示学习引导-->

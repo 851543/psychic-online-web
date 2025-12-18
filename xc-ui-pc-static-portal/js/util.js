@@ -81,7 +81,8 @@ var getUserInfoFromJwt = function (jwt) {
         activeUser.username = jwtDecodeVal.username 
         activeUser.name = jwtDecodeVal.name 
         activeUser.nickname = jwtDecodeVal.nickname 
-        activeUser.userpic = jwtDecodeVal.userpic 
+        activeUser.userpic = jwtDecodeVal.userpic
+        activeUser.companyId = jwtDecodeVal.companyId
         return activeUser;
     }catch(e){
       

@@ -6,6 +6,6 @@ export async function getMyOrdersPageList(
   param: any,
   body: any
 ): Promise<IMyOrdersPageList> {
-  const { data } = await createAPI('/order/orders/my-list', 'post', param, body)
+  const { data } = await createAPI('/orders/my-list', 'post', param, body)
   return data
 }
