@@ -1,4 +1,4 @@
-﻿var  getCookie = function (name) {
+var  getCookie = function (name) {
     var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
     if (arr = document.cookie.match(reg))
         return (arr[2]);
@@ -16,14 +16,15 @@ function setCookie(name,value,Days){
    
     
 }
+// 统一封装：这里改成使用 localStorage 持久化用户数据
 var getUserSession =function (key) {
-    return sessionStorage.getItem(key);
+    return localStorage.getItem(key);
 }
 var setUserSession =function (key, value) {
-    return sessionStorage.setItem(key, value);
+    return localStorage.setItem(key, value);
 }
 var delUserSession =function (key) {
-    return sessionStorage.removeItem(key)
+    return localStorage.removeItem(key)
 }
 function GetQueryString(name) {
     var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
@@ -31,27 +32,63 @@ function GetQueryString(name) {
     if(r != null) return decodeURI(r[2]);
     return null;
 }
-// var getActiveUser = function(){
-//     let uid = getCookie("uid")
-//     if(uid){
-//         let activeUserStr = getUserSession("activeUser");
-//         if(activeUserStr){
-//             return JSON.parse(activeUserStr);
-//         }
-//         return ;
-//     }else{
-//         delUserSession("activeUser")
-//     }
-// }
 var getActiveUser = function(){
-    let jwt = getCookie("jwt")
-    if(jwt){
-        let activeUser = getUserInfoFromJwt(jwt)
-        return activeUser;
-    }else{
-        return ;
+    // 1. 先从 jwt 中解析出当前后端下发的用户信息
+    var baseUser = null;
+    var jwt = getCookie("jwt");
+    if (jwt) {
+        baseUser = getUserInfoFromJwt(jwt);
     }
- }
+
+    // 2. 再看本地是否有缓存的用户信息（例如前端修改后的头像、昵称等）
+    var storageUserStr = getUserSession("activeUser");
+    var storageUser = null;
+    if (storageUserStr) {
+        try{
+            storageUser = JSON.parse(storageUserStr);
+        }catch (e) {
+            storageUser = null;
+        }
+    }
+
+    if (!baseUser && !storageUser) {
+        return;
+    }
+
+    // 3. 以 jwt 解析结果为基础，被缓存信息“覆盖”相同字段，保证刷新后数据一致
+    return Object.assign({}, baseUser || {}, storageUser || {});
+}
+
+/**
+ * 主动保存当前用户信息到 sessionStorage，用于在各个页面共享（例如修改头像、昵称后）
+ * @param user {Object} 完整用户对象
+ */
+var saveActiveUser = function(user){
+    if(!user){
+        delUserSession("activeUser");
+        return;
+    }
+    try{
+        setUserSession("activeUser", JSON.stringify(user));
+    }catch (e){
+        // 存储失败时静默处理
+    }
+}
+
+/**
+ * 局部更新当前用户信息，并写入缓存（如：updateActiveUser({ userpic: 'xxx.png' })）
+ * @param patch {Object} 需要更新的字段
+ * @returns {Object|undefined} 更新后的用户对象
+ */
+var updateActiveUser = function(patch){
+    if(!patch){
+        return;
+    }
+    var current = getActiveUser() || {};
+    var updated = Object.assign({}, current, patch);
+    saveActiveUser(updated);
+    return updated;
+}
 
 //获取jwt令牌
 var getJwt = function(){
@@ -138,8 +175,13 @@ var  checkActiveUser2=  function(){
 }
 
 function logout(){
-    setCookie('jwt','',-1)
-    window.location='/'
+    // 清除登录令牌
+    setCookie('jwt','',-1);
+    // 清除本地缓存的当前用户信息，避免刷新后继续显示已登录状态
+    delUserSession('activeUser');
+    // 如有旧版 juid 之类的 cookie，也可以顺带清理（按需开启）
+    // setCookie('juid','',-1);
+    window.location='/';
 }
 
 function uuid() {

@@ -8,7 +8,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <link rel="icon" href="http://localhost:88/static/img/asset-favicon.ico">
-    <title>修改头像</title>
+    <title>修改信息</title>
     <link rel="stylesheet" href="http://localhost:88/static/plugins/normalize-css/normalize.css" />
     <link rel="stylesheet" href="http://localhost:88/static/plugins/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="http://localhost:88/static/css/page-learing-personal-mail.css" />
@@ -34,7 +34,8 @@
             <div class="nav nav-stacked text-left">
                 <div class="title">个人中心</div>
                 <div class="my-ico">
-                    <img :src="user.userpic || 'http://localhost:88/static/img/studyuser.png'" alt="" style="box-shadow:none">
+                                        <img :src="user.userpic || 'http://localhost:88/static/img/studyuser.png'" width="140px" height="140px" alt="" style="box-shadow:none">
+
                     <p>{{ user.name || user.nickname || user.username || '未登录用户' }}</p>
                 </div>
                 <div class="item">
@@ -45,14 +46,54 @@
         <div class="personal-content pull-right">
             <div class="set-cant">
                 <div class="top">
-                    <div class="tit"><span><em>当前位置: </em> 我的资料 > 修改头像</span></div>
+                    <div class="tit">
+                        <span><em>当前位置: </em> 我的资料 > 修改信息</span>
+                    </div>
+                    <!-- 资料修改入口导航：在本页切换不同表单 -->
+                    <div class="setting-tabs" style="margin: 20px 0;">
+                        <a href="javascript:void(0)" id="choose-avatar" class="tab-btn active" style="padding: 8px 18px; border-radius: 3px; border: 1px solid #ccc;">修改头像</a>
+                        <a href="javascript:void(0)" id="choose-nickname" class="tab-btn" style="padding: 8px 18px; border-radius: 3px; margin-right: 10px; border: 1px solid #ccc;">修改昵称</a>
+                        <a href="javascript:void(0)" id="choose-email" class="tab-btn" style="padding: 8px 18px; border-radius: 3px; margin-right: 10px; border: 1px solid #ccc;">修改邮箱</a>
+                        <a href="javascript:void(0)" id="choose-password" class="tab-btn" style="padding: 8px 18px; border-radius: 3px; border: 1px solid #ccc;">修改密码</a>
+                    </div>
+                    <p style="color:#999; margin-bottom: 0;">请选择需要修改的项目，点击不同标签在本页切换对应的修改表单。</p>
                 </div>
-                <div class="protrait-cont">
-                    <div class="protrait-cont"><img :src="user.userpic || 'http://localhost:88/static/img/studyuser.png'" alt=""></div>
+                <!-- 头像上传区域：默认展开 -->
+                <div class="protrait-cont setting-section show" id="avatar-section" style="margin-top: 25px;">
+                    <div class="protrait-cont">
+                        <img :src="user.userpic || 'http://localhost:88/static/img/studyuser.png'" alt="">
+                    </div>
                     <div class="protrait-up">
                         请选择一个新照片进行上传编辑头像保存后，你可以需要刷新一下本页面（按F5键），才能查看最新的头像效果（照片大小不能超过2M)
                         <input type="file" name="txt_file" id="txt_file" multiple class="file-loading">
                         <span class="ck-up">选择照片</span>
+                    </div>
+                </div>
+                <!-- 昵称修改区域 -->
+                <div class="name-cont setting-section" id="nickname-section" style="margin-top: 25px;">
+                    <div class="top-lab">昵称修改后，旧的昵称将无法正常登陆，请使用新昵称和原密码进行登录</div>
+                    <div class="name-box">
+                        <div>新昵称 ：<input type="text" name="newName" class="name" v-model="nicknameForm.nickname" placeholder="请输入新的昵称"></div>
+                        <div><input type="submit" value="修改昵称" class="sub-lab"></div>
+                    </div>
+                </div>
+                <!-- 邮箱修改区域 -->
+                <div class="name-cont setting-section" id="email-section" style="margin-top: 25px;">
+                    <div class="top-lab">修改邮箱后，请使用新邮箱进行登录，原邮箱将失效。</div>
+                    <div class="name-box">
+                        <div>新邮箱 ：<input type="email" name="newEmail" class="name" v-model="emailForm.email" placeholder="请输入新的邮箱地址"></div>
+                        <div>验证码 ：<input type="text" name="code" class="num-code" v-model="emailForm.code" placeholder="请输入收到的验证码"> <span class="code">获取验证码</span></div>
+                        <div><input type="submit" value="修改邮箱" class="sub-lab"></div>
+                    </div>
+                </div>
+                <!-- 密码修改区域 -->
+                <div class="name-cont setting-section" id="password-section" style="margin-top: 25px;">
+                    <div class="top-lab">为保证账户安全，请定期更换密码，并避免与其它网站使用相同密码。</div>
+                    <div class="name-box">
+                        <div><span class="field-label">原密码 ：</span><input type="password" name="oldPassword" class="name" v-model="passwordForm.oldPassword" placeholder="请输入原密码"></div>
+                        <div><span class="field-label">新密码 ：</span><input type="password" name="newPassword" class="name" v-model="passwordForm.newPassword" placeholder="请输入新密码"></div>
+                        <div><span class="field-label">确认密码 ：</span><input type="password" name="confirmPassword" class="name" v-model="passwordForm.confirmPassword" placeholder="请再次输入新密码"></div>
+                        <div><input type="submit" value="修改密码" class="sub-lab"></div>
                     </div>
                 </div>
             </div>
@@ -64,10 +105,59 @@
     <!-- 页面 css js -->
     <script type="text/javascript" src="../plugins/jquery/dist/jquery.js"></script>
     <script type="text/javascript" src="../plugins/bootstrap/dist/js/bootstrap.js"></script>
+    <style>
+        /* 标签激活状态和渐变效果 */
+        .tab-btn {
+            transition: background-color .3s ease, color .3s ease, border-color .3s ease;
+            margin-right: 10px;
+        }
+        .tab-btn.active {
+            background-color: #2cb82c;
+            color: #fff !important;
+            border-color: #2cb82c !important;
+        }
+        .setting-section {
+            display: none;
+            opacity: 0;
+            transition: opacity .3s ease;
+        }
+        .setting-section.show {
+            display: block;
+            opacity: 1;
+        }
+        /* 邮箱验证码按钮美化，仅作用于本页的邮箱表单 */
+        .set-cant .name-box .code {
+            display: inline-block !important;
+            padding: 6px 14px !important;
+            margin-left: 10px !important;
+            background-color: #2cb82c !important;
+            color: #fff !important;
+            border-radius: 3px !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+            line-height: 20px !important;
+            white-space: nowrap !important;
+            text-align: center !important;
+        }
+        .set-cant .name-box .code:hover {
+            background-color: #25a025 !important;
+            text-decoration: none;
+        }
+        .personal-content .set-cant .name-cont .name-box .code {
+            width: auto !important;   /* 或者用 width: unset !important; */
+        }
+        /* 密码区域标签和输入框对齐 */
+        .set-cant #password-section .name-box .field-label {
+            display: inline-block;
+            width: 80px;
+            text-align: right;
+            margin-right: 8px;
+        }
+    </style>
     <script>
         $(function() {
+            // 左侧导航吸顶
             $(window).scroll(function() {
-                console.log($(this)[0].scrollY)
                 if ($(this)[0].scrollY > 235) {
                     $('.personal-nav').css({
                         'position': 'fixed',
@@ -79,7 +169,29 @@
                         'top': -70
                     });
                 };
-            })
+            });
+            // 资料修改标签切换：同一页面内显示不同表单 + 渐变效果
+            function showSection(targetId) {
+                // tab 激活样式
+                $('.tab-btn').removeClass('active');
+                $('#choose-' + targetId).addClass('active');
+                // 内容渐隐再渐显
+                $('.setting-section').removeClass('show');
+                $('#' + targetId + '-section').addClass('show');
+            }
+            // 默认头像已是 show，对应按钮已加 active
+            $('#choose-avatar').on('click', function () {
+                showSection('avatar');
+            });
+            $('#choose-nickname').on('click', function () {
+                showSection('nickname');
+            });
+            $('#choose-email').on('click', function () {
+                showSection('email');
+            });
+            $('#choose-password').on('click', function () {
+                showSection('password');
+            });
         })
     </script>
     <script>
@@ -93,18 +205,90 @@
                     name: '',
                     nickname: '',
                     userpic: ''
+                },
+                nicknameForm: {
+                    nickname: ''
+                },
+                emailForm: {
+                    email: '',
+                    code: ''
+                },
+                passwordForm: {
+                    oldPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
                 }
             },
             created() {
                 var activeUser = getActiveUser();
                 if (activeUser) {
                     this.user = activeUser;
+                    this.nicknameForm.nickname = activeUser.nickname || activeUser.name || activeUser.username;
                 } else {
                     // 未登录则跳转登录页
                     window.location = "http://localhost:88/sign.html?returnUrl=" + Base64.encode(window.location);
                 }
             }
         })
+    </script>
+    <script>
+        // 头像上传：调用后端 /upload/pic/{id} 接口
+        $(function () {
+            $('#txt_file').on('change', function () {
+                var file = this.files[0];
+                if (!file) {
+                    return;
+                }
+
+                // 限制大小 2M
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('图片大小不能超过 2M');
+                    this.value = '';
+                    return;
+                }
+
+                if (!window.modifyInfoVm || !modifyInfoVm.user || !modifyInfoVm.user.userid) {
+                    alert('请先登录后再修改头像');
+                    return;
+                }
+
+                var userId = modifyInfoVm.user.userid;
+
+                // 本地预览头像
+                var imgUrl = URL.createObjectURL(file);
+                $('.protrait-cont img').attr('src', imgUrl);
+
+                var formData = new FormData();
+                // 字段名必须与后端 @RequestPart("file") 一致
+                formData.append('file', file);
+
+                $.ajax({
+                    // 如果后端有前缀（如 /ucenter、/api），在这里补上
+                    url: '/api/auth/user/upload/pic/' + encodeURIComponent(userId),
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhrFields: {
+                        withCredentials: true
+                    },
+                    success: function (res) {
+                        // 后端如果直接返回头像地址
+                        if (res) {
+                            // 1. 当前页面头像更新
+                            modifyInfoVm.user.userpic = res;
+                            // 2. 写入全局用户缓存，保证其它页面 & 刷新后数据一致
+                            if (typeof updateActiveUser === 'function') {
+                                updateActiveUser({ userpic: res });
+                            }
+                        }
+                    },
+                    error: function (xhr) {
+                        console.error(xhr);
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
