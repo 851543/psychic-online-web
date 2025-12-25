@@ -4,9 +4,9 @@ $(document).scroll(function(){
     var scTop = $(document).scrollTop()
     if($(window).innerWidth() >= 1280){
          if(scTop >= 550 ){
-         $(".index-cont-nav,.gotop").show();   
+         $(".index-cont-nav,.gotop:not(.customer-service)").show();   
     }else{
-         $(".index-cont-nav,.gotop").hide();   
+         $(".index-cont-nav,.gotop:not(.customer-service)").hide();   
     }   
     }
     

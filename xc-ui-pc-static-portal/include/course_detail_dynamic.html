@@ -250,10 +250,10 @@
                 //判断是否购买
                 //判断学生的选课状态
                 queryLearnstatus(this.courseId).then((res)=>{
-                    console.log(res)
                     if(res.learnStatus){
                         if(res.learnStatus == '702001'){//正常
-                            $('.popup-course').show()
+                            // $('.popup-course').show()
+                            this.startLearngin()
                         }else if(res.learnStatus == '702002'){
                             //需要购买课程
                             $('.popup-box').show()
@@ -339,6 +339,7 @@
 						if(res.status){
 							if(res.status == '601002'){//支付成功
 							   this.$message.success('支付成功，可以去学习啦');
+                               $('.popup-box').hide()
 							}else{
 								this.$message.error('请扫码支付，支付完成请不要重复支付。');
 							}
