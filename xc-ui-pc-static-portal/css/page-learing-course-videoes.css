@@ -3234,8 +3234,18 @@ em, i {
   height: 19px;
   margin-top: 0px;
   display: inline-block;
-  background: url(http://localhost:88/static/img/asset-star-show.png) no-repeat;
-  background-size: contain;
+  overflow: hidden;
+  background: url(http://localhost:88/static/img/asset-stara.png) no-repeat;
+  background-size: 109px 19px;
+}
+
+.star-show .score {
+  width: 0px;
+  height: 19px;
+  float: right;
+  display: inline-block;
+  background: url(http://localhost:88/static/img/asset-starGreya.png) top right no-repeat;
+  background-size: 109px 19px;
 }
 
 .star-show .score i {

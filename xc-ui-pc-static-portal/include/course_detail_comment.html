@@ -1,0 +1,103 @@
+<div class="article-left-box">
+    <div class="comment-box">
+        <div class="evaluate">
+            <div class="eva-top">
+                <div class="tit" style="margin-top: 8px;">课程评分 </div>
+                <div class="star" @mousemove="updateStarScore" @click="setStarScore" @mouseleave="resetStarScore">
+                    <div class="score" :style="{width: starScoreWidth + 'px'}"><i>{{ currentStarScore }}</i></div>
+                </div><span class="star-score"> <i>{{ currentStarScore }}</i> 分</span></div>
+            <div class="eva-cont">
+                <div class="tit">学员评语 </div>
+                <div class="text-box">
+                    <textarea class="form-control" rows="5" v-model="commentText" placeholder="扯淡、吐槽、表扬、鼓励......想说啥说啥！" maxlength="500"></textarea>
+                    <div class="text-right"><span @click="submitComment" :class="{disabled: !canSubmit}">发表评论</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="course-evaluate">
+            <div class="top-tit">评论
+                <span>
+                    <label><input name="eval" type="radio" :value="2" v-model.number="commentFilter.level" @change="loadCommentList(true)" /> 全部评价 </label>
+                    <label><input name="eval" type="radio" :value="1" v-model.number="commentFilter.level" @change="loadCommentList(true)" /> 好评 </label>
+                    <label><input name="eval" type="radio" :value="0" v-model.number="commentFilter.level" @change="loadCommentList(true)" /> 中评 </label>
+                    <label><input name="eval" type="radio" :value="-1" v-model.number="commentFilter.level" @change="loadCommentList(true)" /> 差评 </label>
+                </span>
+            </div>
+            <div class="top-cont">
+                <div class="cont-top-left">
+                    <div class="star-scor">
+                        <div class="star-show">
+                            <div class="score" :style="{width: (109 * (1 - (parseFloat(commentStats.avgScore || 0) / 5))) + 'px'}"><i>{{ commentStats.avgScore }}</i></div>
+                        </div>
+                        <div class="scor">{{ commentStats.avgScore }}分</div>
+                    </div>
+                    <!-- <div class="all-scor">总评分：{{ commentStats.totalCount }}</div> -->
+                </div>
+                <div class="cont-top-right">
+                    <div class="star-grade">五星
+                        <div class="grade">
+                            <div class="grade-percent"><span :style="{width: (commentStats.starPercent[5] || 0) + '%'}"></span></div>
+                            <div class="percent-num"><i>{{ commentStats.starPercent[5] || 0 }}</i>%</div>
+                        </div>
+                    </div>
+                    <div class="star-grade">四星
+                        <div class="grade">
+                            <div class="grade-percent"><span :style="{width: (commentStats.starPercent[4] || 0) + '%'}"></span></div>
+                            <div class="percent-num"><i>{{ commentStats.starPercent[4] || 0 }}</i>%</div>
+                        </div>
+                    </div>
+                    <div class="star-grade">三星
+                        <div class="grade">
+                            <div class="grade-percent"><span :style="{width: (commentStats.starPercent[3] || 0) + '%'}"></span></div>
+                            <div class="percent-num"><i>{{ commentStats.starPercent[3] || 0 }}</i>%</div>
+                        </div>
+                    </div>
+                    <div class="star-grade">二星
+                        <div class="grade">
+                            <div class="grade-percent"><span :style="{width: (commentStats.starPercent[2] || 0) + '%'}"></span></div>
+                            <div class="percent-num"><i>{{ commentStats.starPercent[2] || 0 }}</i>%</div>
+                        </div>
+                    </div>
+                    <div class="star-grade">一星
+                        <div class="grade">
+                            <div class="grade-percent"><span :style="{width: (commentStats.starPercent[1] || 0) + '%'}"></span></div>
+                            <div class="percent-num"><i>{{ commentStats.starPercent[1] || 0 }}</i>%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="comment-item-box">
+                <div class="title">评论 <span>{{ commentList.counts || 0 }}条评论</span></div>
+                <div class="item" v-for="(comment, index) in commentList.items" :key="index">
+                    <div class="item-left">
+                        <p><img :src="getAvatarUrl(comment.userHead)" width="60px" alt=""></p>
+                        <p>{{ comment.nickName || comment.userName || '匿名用户' }}</p>
+                    </div>
+                    <div class="item-cent">
+                        <p>{{ comment.commentText }}</p>
+                        <p class="time">{{ formatDate(comment.commentDate) }}</p>
+                        <!-- 回复列表 -->
+                        <div class="comment-reply" v-if="comment.courseCommentReplyList && comment.courseCommentReplyList.length > 0" style="margin-top: 10px; padding: 10px; background-color: #f8f8f8;">
+                            <div class="reply-item" v-for="(reply, replyIndex) in comment.courseCommentReplyList" :key="replyIndex" style="margin-bottom: 8px;">
+                                <span class="reply-nickname" style="color: #666; font-weight: bold;">{{ reply.nickName || reply.userName }}回复：</span>
+                                <span class="reply-text" style="color: #666;">{{ reply.replyText }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-rit">
+                        <p>
+                            <div class="star-show">
+                                <div class="score" :style="{width: (109 * (1 - ((comment.starRank || 0) / 5))) + 'px'}"><i>{{ comment.starRank || 0 }}</i></div>
+                            </div>
+                        </p>
+                        <p>评分 <span>{{ comment.starRank || 0 }}分</span></p>
+                    </div>
+                </div>
+                <div class="get-more" v-if="commentList.loading">页面加载中...</div>
+                <div class="get-more" v-else-if="!commentList.items || commentList.items.length === 0">暂无评论</div>
+                <div class="get-more" v-else-if="!commentList.hasMore" style="color: #999;">已加载全部评论</div>
+            </div>
+        </div>
+    </div>
+</div>
+

@@ -135,8 +135,6 @@
       />
     </div>
 
-    <!-- 类型提示框 -->
-    <CourseAddTypeDialog :dialogVisible.sync="typeDialogVisible"></CourseAddTypeDialog>
   </div>
 </template>
 
@@ -144,7 +142,6 @@
 import { Component, Prop, Watch, Vue } from 'vue-property-decorator'
 import { mixins } from 'vue-class-component'
 import Pagination from '@/components/pagination/index.vue'
-import CourseAddTypeDialog from './course-addtype-dialog.vue'
 import { IKVData } from '@/api/types' // 通用 interface
 import {
   AUDIT_STATUS,
@@ -165,8 +162,7 @@ import MixinTools from '@/utils/mixins.vue'
 @Component({
   name: 'CourseList',
   components: {
-    Pagination,
-    CourseAddTypeDialog
+    Pagination
   },
   filters: {
     auditStatusText: function(value: string) {
@@ -201,9 +197,6 @@ export default class extends mixins(MixinTools) {
   private aduitStatusOptions: IKVData[] = AUDIT_STATUS
 
   private coursePublishStatus: IKVData[] = COUSE_PUBLIC_STATUS
-
-  // 类型选择弹出对话框
-  private typeDialogVisible: boolean = false // 是否显示
 
   // 查询
   private listData: ICoursePageList = {} // 数据体
@@ -339,7 +332,10 @@ export default class extends mixins(MixinTools) {
     } catch (error) {}
   }
   private handleShowTypeDlg() {
-    this.typeDialogVisible = true
+    // 直接跳转到课程添加页面，默认使用录播课程类型
+    this.$router.push({
+      path: `/organization/course-add?teachmode=200002`
+    })
   }
 
   // 监控 watch

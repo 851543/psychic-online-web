@@ -13,8 +13,6 @@
       <el-tab-pane label="教务教学" name="second">
         <router-link to="/organization/course-list">课程管理</router-link>
         <div class="divider"></div>
-        <router-link to="/organization/live-list">直播管理</router-link>
-        <div class="divider"></div>
         <router-link to="/organization/media-list">媒资管理</router-link>
         <div class="divider"></div>
         <router-link to="/organization/work-list">作业管理</router-link>

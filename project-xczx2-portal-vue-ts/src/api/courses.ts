@@ -117,19 +117,6 @@ export async function mediaAssociation(mediaId: string, fileName:string,teachpla
   })
 }
 
-// 作业绑定
-export async function workAssociation(
-  teachplanId: number,
-  workId: number,
-  workTitle: string
-) {
-  await createAPI(`/content/teachplan/work/association`, 'post', undefined, {
-    teachplanId,
-    workId,
-    workTitle
-  })
-}
-
 // 媒资解绑
 export async function mediaUnAssociation(
   teachplanId: number,

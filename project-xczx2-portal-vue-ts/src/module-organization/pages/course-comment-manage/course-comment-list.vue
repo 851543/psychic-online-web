@@ -31,7 +31,7 @@
           class="course-comment"
         >
           <el-col :span="1">
-            <img :src="comment.userHead" class="user-head" />
+            <img :src="getAvatarUrl(comment.userHead)" class="user-head" />
           </el-col>
           <el-col :span="23">
             <el-row>
@@ -53,7 +53,7 @@
               <el-col
                 :span="24"
                 class="come-from"
-              >已上课10小时 评价来自《{{ comment.comeFrom }}》 {{ comment.commentDate | dateTimeFormat }} 举报</el-col>
+              >已上课10小时 评价来自《{{ comment.comeFrom }}》 {{ comment.commentDate | dateTimeFormat }}</el-col>
               <el-col
                 :span="24"
                 class="comment-reply"
@@ -117,6 +117,7 @@ import {
   getCourseCommentPageList,
   replyCourseComment
 } from '@/api/course-comment'
+ import defaultAvatar from '@/assets/img/studyuser.png'
 
 @Component({
   components: {
@@ -137,7 +138,15 @@ export default class CourseCommentList extends Vue {
     level: 2
   }
   // 评论列表
-  private listResult: ICourseCommentPageVO = {}
+  private listResult: ICourseCommentPageVO = {
+    items: [],
+    counts: 0
+  }
+
+  // 组件挂载时加载数据
+  mounted() {
+    this.getCourseCommentPageList()
+  }
 
   // 计算属性
   getReplyStatus(comment: any) {
@@ -145,6 +154,21 @@ export default class CourseCommentList extends Vue {
       return '已回复'
     }
     return !comment.showReplyTextarea ? '回复' : '取消回复'
+  }
+
+  /**
+   * 获取头像URL，如果路径不是完整URL则加上服务器前缀
+   */
+  getAvatarUrl(userHead: string): string {
+    if (!userHead) {
+      return defaultAvatar
+    }
+    // 如果已经是完整URL（以http://或https://开头），直接返回
+    if (userHead.startsWith('http://') || userHead.startsWith('https://')) {
+      return userHead
+    }
+    // 否则加上服务器前缀
+    return `${process.env.VUE_APP_SERVER_PICSERVER_URL}${userHead}`
   }
 
   /**
@@ -165,6 +189,9 @@ export default class CourseCommentList extends Vue {
     )
     if (listResult && listResult.items) {
       listResult.items = listResult.items.map((item: any) => {
+        // 将API返回的courseCommentReplyList映射为replyDTOList
+        item.replyDTOList = item.courseCommentReplyList || []
+        // 初始化回复相关状态
         item.showReplyTextarea = false
         item.myReplyText = ''
         return item
@@ -202,12 +229,11 @@ export default class CourseCommentList extends Vue {
   }
 
   // 监控 watch
-  // 搜索栏
-  @Watch('listQueryData', { deep: true, immediate: true })
-  private watchListQueryData(newVal: string) {
-    if (newVal == '') {
-      return
-    }
+  // 搜索栏 - 用户改变搜索条件时触发
+  @Watch('listQueryData', { deep: true })
+  private watchListQueryData() {
+    // 重置到第一页
+    this.listQuery.pageNo = 1
     this.getCourseCommentPageList()
   }
 

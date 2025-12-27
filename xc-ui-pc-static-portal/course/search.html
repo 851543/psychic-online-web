@@ -283,12 +283,10 @@
                     this.searchParams.mt = mt
                     this.searchParams.st = st 
                     this.searchParams.grade = grade       
-                    this.searchParams.sortType = sortType       
+                    this.searchParams.sortType = sortType
                     requestCourseList(this.pageNo,this.pageSize,this.searchParams).then(res=>{
-                        console.log(res);
                         this.courseList = res.items;
                         this.total = res.counts;
-                        console.log(this.courseList);
                         this.mtList = res.mtList;
                         this.stList = res.stList;
                     })

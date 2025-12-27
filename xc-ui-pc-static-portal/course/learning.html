@@ -15,12 +15,14 @@
     <link rel="stylesheet" href="http://localhost:88/static/plugins/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="http://localhost:88/css/page-learing-course-videoes.css" />
     <link rel="stylesheet" href="http://localhost:88/static/css/el/index.css" />
-    <script src="http://localhost:88/static/js/vue/vue.min.js"></script>
-    <script src="http://localhost:88/static/js/axios/axios.min.js"></script>
-    <script src="http://localhost:88/static/js/util.js"></script>
-    <script src="http://localhost:88/static/js/public.js"></script>
+    <script src="http://localhost:88/js/vue/vue.min.js"></script>
+    <script src="http://localhost:88/js/jwt-decode/jwt-decode.min.js"></script>
+    <script src="http://localhost:88/js/base64.min.js"></script>
+    <script src="http://localhost:88/js/axios/axios.min.js"></script>
+    <script src="http://localhost:88/js/util.js"></script>
+    <script src="http://localhost:88/js/public.js"></script>
     <script src="http://localhost:88/static/css/el/index.js"></script>
-    <script src="http://localhost:88/static/js/learning.js"></script>
+    <script src="http://localhost:88/js/learning.js"></script>
 </head>
 
 <body >
@@ -391,7 +393,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="com">
+                        <div class="com" id="commentApp">
                             <div class="com-box">
                                 <!--<div class="note-lab"><span class="active">我的问答</span><span>精选问答</span></div>-->
                                 <div class="note-item-cont">
@@ -399,14 +401,14 @@
                                         <div class="evaluate">
                                             <div class="eva-top">
                                                 <div class="tit">课程评分 </div>
-                                                <div class="star">
-                                                    <div class="score"><i>5</i></div>
-                                                </div><span class="star-score"> <i>5</i> 分</span></div>
+                                                <div class="star" @mousemove="updateStarScore" @click="setStarScore" @mouseleave="resetStarScore">
+                                                    <div class="score" :style="{width: starScoreWidth + 'px'}"><i>{{ currentStarScore }}</i></div>
+                                                </div><span class="star-score"> <i>{{ currentStarScore }}</i> 分</span></div>
                                             <div class="eva-cont">
                                                 <div class="tit">学员评语 </div>
                                                 <div class="text-box">
-                                                    <textarea class="form-control" rows="5" placeholder="扯淡、吐槽、表扬、鼓励......想说啥说啥！"></textarea>
-                                                    <div class="text-right"><span>发表评论</span></div>
+                                                    <textarea class="form-control" rows="5" v-model="commentText" placeholder="扯淡、吐槽、表扬、鼓励......想说啥说啥！" maxlength="500"></textarea>
+                                                    <div class="text-right"><span @click="submitComment" :class="{disabled: !canSubmit}">发表评论</span></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -416,116 +418,25 @@
                                         <!--<div class="info"><span class="pic" onclick="screenshot()">截图 </span><span class="not-but">保存</span></div>-->
                                         <!--</div>-->
                                         <ul class="my-item-box">
-                                            <li>
+                                            <li v-for="(comment, index) in commentList.items" :key="index">
                                                 <div>
-                                                    <span><img src="http://localhost:88/static/img/demo/zhubb.png" alt=""></span>
-                                                    <span class="name">朱老师</span>
+                                                    <span><img :src="getAvatarUrl(comment.userHead)" alt=""></span>
+                                                    <span class="name">{{ comment.nickName || comment.userName || '匿名用户' }}</span>
                                                     <div class="item-rit">
                                                         <div class="star-show">
-                                                            <div class="score"><i>4</i></div>
+                                                            <div class="score" :style="{width: (109 * (1 - ((comment.starRank || 0) / 5))) + 'px'}"><i>{{ comment.starRank || 0 }}</i></div>
                                                         </div>
-                                                        <div class="showSt">评分 <span>5星</span></div>
+                                                        <div class="showSt">评分 <span>{{ getStarText(comment.starRank) }}</span></div>
                                                     </div>
                                                 </div>
-                                                <div class="cont">
-                                                    课程内容 消息回复接口（图文,语音消息的自动回复） 素材管理接口（图片上传） 自定义菜单接口（菜单的创建，查询，删除）
-                                                </div>
-                                                <div class="operation"><span>2017-2-23</span>
-                                                    <div class="oper-box"></div>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div>
-                                                    <span><img src="http://localhost:88/static/img/demo/zhubb.png" alt=""></span>
-                                                    <span class="name">朱老师</span>
-                                                    <div class="item-rit">
-                                                        <div class="star-show">
-                                                            <div class="score"><i>4</i></div>
-                                                        </div>
-                                                        <div class="showSt">评分 <span>5星</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="cont">
-                                                    课程内容 消息回复接口（图文,语音消息的自动回复） 素材管理接口（图片上传） 自定义菜单接口（菜单的创建，查询，删除）
-                                                </div>
-                                                <div class="operation"><span>2017-2-23</span>
-                                                    <div class="oper-box"></div>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div>
-                                                    <span><img src="http://localhost:88/static/img/demo/zhubb.png" alt=""></span>
-                                                    <span class="name">朱老师</span>
-                                                    <div class="item-rit">
-                                                        <div class="star-show">
-                                                            <div class="score"><i>4</i></div>
-                                                        </div>
-                                                        <div class="showSt">评分 <span>5星</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="cont">
-                                                    课程内容 消息回复接口（图文,语音消息的自动回复） 素材管理接口（图片上传） 自定义菜单接口（菜单的创建，查询，删除）
-                                                </div>
-                                                <div class="operation"><span>2017-2-23</span>
-                                                    <div class="oper-box"></div>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div>
-                                                    <span><img src="http://localhost:88/static/img/demo/zhubb.png" alt=""></span>
-                                                    <span class="name">朱老师</span>
-                                                    <div class="item-rit">
-                                                        <div class="star-show">
-                                                            <div class="score"><i>4</i></div>
-                                                        </div>
-                                                        <div class="showSt">评分 <span>5星</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="cont">
-                                                    课程内容 消息回复接口（图文,语音消息的自动回复） 素材管理接口（图片上传） 自定义菜单接口（菜单的创建，查询，删除）
-                                                </div>
-                                                <div class="operation"><span>2017-2-23</span>
-                                                    <div class="oper-box"></div>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div>
-                                                    <span><img src="http://localhost:88/static/img/demo/zhubb.png" alt=""></span>
-                                                    <span class="name">朱老师</span>
-                                                    <div class="item-rit">
-                                                        <div class="star-show">
-                                                            <div class="score"><i>4</i></div>
-                                                        </div>
-                                                        <div class="showSt">评分 <span>5星</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="cont">
-                                                    课程内容 消息回复接口（图文,语音消息的自动回复） 素材管理接口（图片上传） 自定义菜单接口（菜单的创建，查询，删除）
-                                                </div>
-                                                <div class="operation"><span>2017-2-23</span>
-                                                    <div class="oper-box"></div>
-                                                </div>
-                                            </li>
-                                            <li>
-                                                <div>
-                                                    <span><img src="http://localhost:88/static/img/demo/zhubb.png" alt=""></span>
-                                                    <span class="name">朱老师</span>
-                                                    <div class="item-rit">
-                                                        <div class="star-show">
-                                                            <div class="score"><i>4</i></div>
-                                                        </div>
-                                                        <div class="showSt">评分 <span>5星</span></div>
-                                                    </div>
-                                                </div>
-                                                <div class="cont">
-                                                    课程内容 消息回复接口（图文,语音消息的自动回复） 素材管理接口（图片上传） 自定义菜单接口（菜单的创建，查询，删除）
-                                                </div>
-                                                <div class="operation"><span>2017-2-23</span>
+                                                <div class="cont">{{ comment.commentText }}</div>
+                                                <div class="operation"><span>{{ formatDate(comment.commentDate) }}</span>
                                                     <div class="oper-box"></div>
                                                 </div>
                                             </li>
                                         </ul>
-                                        <a href="#" class="more">查看更多</a>
+                                        <div class="get-more" v-if="commentList.loading">页面加载中...</div>
+                                        <div class="get-more" v-else-if="!commentList.items || commentList.items.length === 0">暂无评论</div>
                                     </div>
                                 </div>
                             </div>
@@ -650,29 +561,6 @@
 
 
             $(function() {
-                //评分
-                $('.star .score').map(function(n, i) {
-                    var x = Number($(this).find('i').text());
-                    var w = 109 * (1 - x / 5);
-                    $(this).css('width', w + 'px');
-                })
-                //评论打分
-                $('.evaluate .star').mousemove(function(e) {
-                    var startX = $(this).offset().left;
-                    var movX = e.clientX - startX + 0.5;
-                    var w = 145 * (1 - movX / 145);
-                    $(this).find('.score').css('width', w + 'px');
-                    $('.star-score i').text((movX / 145 * 5).toFixed(1))
-                })
-                //星级评分
-                $('.grade').map(function(n, i) {
-                    var pret = $(this).find('.percent-num i').text();
-                    var wt = $(this).find('.grade-percent').width();
-                    $(this).find('.grade-percent span').css('width', wt * pret / 100);
-                })
-
-
-
             })
 
 
@@ -1142,6 +1030,10 @@
               this.teachplans = res.teachplans;
               console.log(res)
               document.getElementById("courseNameText").innerHTML=res.courseBase.name;
+              if(typeof commentVm !== 'undefined' && commentVm){
+                  commentVm.courseName = res.courseBase.name;
+                  commentVm.charge = res.courseBase.charge;
+              }
               //播放第一个视频
               this.firstPlay(this.teachplans,this.teachplanId)
           }).catch(err => {
@@ -1158,6 +1050,285 @@
        
         }
     })
+
+   var commentVm = new Vue({
+        el: "#commentApp",
+        data: {
+            courseId: '',
+            courseName: '',
+            charge: '',
+            commentText: '',
+            currentStarScore: 5,
+            selectedStarScore: 5,
+            starScoreWidth: 0,
+            submittingComment: false,
+            commentList: {
+                items: [],
+                counts: 0,
+                pageNo: 1,
+                pageSize: 10,
+                loading: false,
+                hasMore: false
+            },
+            commentStats: {
+                avgScore: 0,
+                totalCount: 0,
+                starPercent: {5: 0, 4: 0, 3: 0, 2: 0, 1: 0}
+            }
+        },
+        methods: {
+            updateStarScore(e){
+                var startX = $(e.currentTarget).offset().left;
+                var movX = e.clientX - startX + 0.5;
+                var exactScore = movX / 145 * 5;
+                if(exactScore < 0) exactScore = 0;
+                if(exactScore > 5) exactScore = 5;
+                this.currentStarScore = parseFloat(exactScore.toFixed(1));
+                var w = 145 * (1 - exactScore / 5);
+                this.starScoreWidth = w;
+            },
+            setStarScore(e){
+                var startX = $(e.currentTarget).offset().left;
+                var movX = e.clientX - startX + 0.5;
+                var exactScore = movX / 145 * 5;
+                if(exactScore < 0) exactScore = 0;
+                if(exactScore > 5) exactScore = 5;
+                this.currentStarScore = parseFloat(exactScore.toFixed(1));
+                this.selectedStarScore = this.currentStarScore;
+                var w = 145 * (1 - exactScore / 5);
+                this.starScoreWidth = w;
+            },
+            resetStarScore(){
+                this.currentStarScore = this.selectedStarScore;
+                var w = 145 * (1 - this.selectedStarScore / 5);
+                this.starScoreWidth = w;
+            },
+            submitComment(){
+                if(this.submittingComment) return;
+                if(!this.canSubmit){
+                    this.$message.warning('请填写评论内容并选择评分');
+                    return;
+                }
+                let activeUser = getActiveUser();
+                if(!activeUser){
+                    showlogin();
+                    return;
+                }
+
+                if(String(window.location).indexOf("/course/preview/")>0){
+                    this.$message.warning('预览模式不能评论');
+                    return;
+                }
+
+                let ensureCourseCharge = () => {
+                    let localCharge = this.charge;
+                    if(localCharge !== undefined && localCharge !== null && String(localCharge) !== ''){
+                        return Promise.resolve({
+                            charge: String(localCharge),
+                            isFree: String(localCharge) === '201000'
+                        });
+                    }
+
+                    if(typeof requestGetCourseInfo === 'function'){
+                        return requestGetCourseInfo(this.courseId).then((courseRes) => {
+                            let charge = '';
+                            if(courseRes && courseRes.courseBase && courseRes.courseBase.charge !== undefined && courseRes.courseBase.charge !== null){
+                                charge = courseRes.courseBase.charge;
+                                this.charge = charge;
+                            }
+                            let isFree = String(charge) === '201000';
+                            if(!isFree && courseRes && courseRes.courseMarket && courseRes.courseMarket.price !== undefined && courseRes.courseMarket.price !== null){
+                                let price = parseFloat(courseRes.courseMarket.price);
+                                if(isFinite(price) && price <= 0){
+                                    isFree = true;
+                                }
+                            }
+                            return { charge: String(charge || ''), isFree: isFree };
+                        }).catch(() => {
+                            return { charge: String(this.charge || ''), isFree: String(this.charge) === '201000' };
+                        });
+                    }
+
+                    let prefix = String(window.location).indexOf('/preview/') > 0 ? '/open' : '/api';
+                    return requestGet(prefix + '/content/course/whole/' + this.courseId, {}).then((courseRes) => {
+                        let charge = '';
+                        if(courseRes && courseRes.courseBase && courseRes.courseBase.charge !== undefined && courseRes.courseBase.charge !== null){
+                            charge = courseRes.courseBase.charge;
+                            this.charge = charge;
+                        }
+                        let isFree = String(charge) === '201000';
+                        if(!isFree && courseRes && courseRes.courseMarket && courseRes.courseMarket.price !== undefined && courseRes.courseMarket.price !== null){
+                            let price = parseFloat(courseRes.courseMarket.price);
+                            if(isFinite(price) && price <= 0){
+                                isFree = true;
+                            }
+                        }
+                        return { charge: String(charge || ''), isFree: isFree };
+                    }).catch(() => {
+                        return { charge: String(this.charge || ''), isFree: String(this.charge) === '201000' };
+                    });
+                };
+
+                let doSubmit = () => {
+                    this.submittingComment = true;
+                    let courseName = this.courseName || '课程';
+                    let commentData = {
+                        targetId: this.courseId,
+                        targetName: courseName,
+                        targetType: 'course',
+                        starRank: this.selectedStarScore,
+                        commentText: this.commentText.trim(),
+                        comeFrom: courseName
+                    };
+                    requestPost('/api/content/course-comment', commentData).then((res) => {
+                        this.submittingComment = false;
+                        this.$message.success('评论发表成功！');
+                        this.commentText = '';
+                        this.selectedStarScore = 5;
+                        this.currentStarScore = 5;
+                        this.starScoreWidth = 0;
+                        this.loadCommentList(true);
+                    }).catch((error) => {
+                        this.submittingComment = false;
+                        if(error && error.response && error.response.data && error.response.data.errMessage){
+                            this.$message.error(error.response.data.errMessage);
+                        } else {
+                            this.$message.error('发表评论失败，请稍后重试');
+                        }
+                    });
+                };
+
+                ensureCourseCharge().then((info) => {
+                    if(info && info.isFree){
+                        doSubmit();
+                        return;
+                    }
+
+                    requestPost('/api/learning/choosecourse/learnstatus/' + this.courseId).then((res)=>{
+                        if(res && res.learnStatus){
+                            if(res.learnStatus != '702001'){
+                                if(res.learnStatus == '702002'){
+                                    this.$message.warning('购买/报名后才能评论');
+                                }else{
+                                    this.$message.warning('暂无学习资格，无法评论');
+                                }
+                                return;
+                            }
+                        }else{
+                            this.$message.warning('无法获取学习资格');
+                            return;
+                        }
+
+                        doSubmit();
+                    }).catch((error)=>{
+                        this.$message.error('无法获取学习资格');
+                    });
+                });
+            },
+            loadCommentList(reset = false){
+                if(this.commentList.loading) return;
+                if(reset){
+                    this.commentList.pageNo = 1;
+                    this.commentList.items = [];
+                }
+                this.commentList.loading = true;
+                let body = {
+                    pageNo: this.commentList.pageNo,
+                    pageSize: this.commentList.pageSize,
+                    targetId: this.courseId,
+                    targetType: 'course'
+                };
+                requestPost('/api/content/course-comment/list?pageNo=' + this.commentList.pageNo + '&pageSize=' + this.commentList.pageSize, body).then((res) => {
+                    this.commentList.loading = false;
+                    if(res && res.items){
+                        var processedItems = res.items.map(function(item){
+                            if(item.starRank !== undefined && item.starRank !== null){
+                                item.starRank = parseFloat(item.starRank);
+                            }
+                            return item;
+                        });
+                        this.commentList.items = processedItems;
+                        this.commentList.counts = res.counts || 0;
+                        this.commentList.hasMore = false;
+                        this.calculateCommentStats();
+                    }
+                }).catch((error) => {
+                    this.commentList.loading = false;
+                    console.error('加载评论列表失败:', error);
+                });
+            },
+            calculateCommentStats(){
+                let items = this.commentList.items;
+                if(!items || items.length === 0){
+                    this.commentStats.avgScore = 0;
+                    this.commentStats.totalCount = 0;
+                    this.commentStats.starPercent = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+                    return;
+                }
+                let totalScore = 0;
+                let starCount = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+                items.forEach(item => {
+                    if(item.starRank){
+                        totalScore += item.starRank;
+                        let star = Math.round(item.starRank);
+                        if(star >= 5) starCount[5]++;
+                        else if(star >= 4) starCount[4]++;
+                        else if(star >= 3) starCount[3]++;
+                        else if(star >= 2) starCount[2]++;
+                        else starCount[1]++;
+                    }
+                });
+                this.commentStats.avgScore = items.length > 0 ? (totalScore / items.length).toFixed(1) : 0;
+                this.commentStats.totalCount = this.commentList.counts;
+                let total = items.length;
+                for(let i = 1; i <= 5; i++){
+                    this.commentStats.starPercent[i] = total > 0 ? Math.round(starCount[i] / total * 100) : 0;
+                }
+            },
+            getAvatarUrl(userHead){
+                if(!userHead) return '/static/img/widget-pic.png';
+                if(userHead.startsWith('http://') || userHead.startsWith('https://')){
+                    return userHead;
+                }
+                var picServerUrl = window.VUE_APP_SERVER_PICSERVER_URL || 'http://localhost:9000';
+                return picServerUrl + userHead;
+            },
+            formatDate(dateStr){
+                if(!dateStr) return '';
+                try{
+                    var date = new Date(dateStr);
+                    var year = date.getFullYear();
+                    var month = String(date.getMonth() + 1).padStart(2, '0');
+                    var day = String(date.getDate()).padStart(2, '0');
+                    return year + '-' + month + '-' + day;
+                }catch(e){
+                    return dateStr;
+                }
+            },
+            getStarText(starRank){
+                if(starRank === undefined || starRank === null || starRank === '') return '0星';
+                var star = Math.round(parseFloat(starRank));
+                var starText = ['空', '一', '二', '三', '四', '五'];
+                return (starText[star] || star) + '星';
+            }
+        },
+        computed: {
+            canSubmit(){
+                return this.commentText.trim().length > 0 && this.selectedStarScore > 0 && !this.submittingComment;
+            }
+        },
+        created(){
+            this.courseId = GetQueryString('id');
+            this.starScoreWidth = 145 * (1 - this.selectedStarScore / 5);
+        },
+        mounted(){
+            var courseTitle = $('#courseNameText').text();
+            if(courseTitle){
+                this.courseName = courseTitle.trim();
+            }
+            this.loadCommentList(true);
+        }
+   })
    
 
 

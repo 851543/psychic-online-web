@@ -23,7 +23,13 @@
         <el-table-column prop="title" label="作业信息" width="400" align="center"></el-table-column>
 
         <el-table-column label="绑定课程" align="center">
-          <template slot-scope="scope">{{ scope.row.bindCourses | bindCoursesFormat }}</template>
+          <template slot-scope="scope">
+            <el-button
+              type="text"
+              size="mini"
+              @click="handleOpenBindDialog(scope.row)"
+            >{{ scope.row.teachplanId ? '查看' : '绑定' }}</el-button>
+          </template>
         </el-table-column>
 
         <el-table-column prop="userNum" label="答题人数" align="center"></el-table-column>
@@ -38,7 +44,7 @@
             <el-button
               type="text"
               size="mini"
-              @click="handleOpenDeleteWorkConfirm(scope.row.workId)"
+              @click="handleOpenDeleteWorkConfirm(scope.row.id)"
             >移除</el-button>
           </template>
         </el-table-column>
@@ -56,12 +62,20 @@
       </div>
     </div>
 
-    <!-- 上传资料对话框 -->
+    <!-- 新增/编辑作业对话框 -->
     <work-add-dialog
       :dialogVisible.sync="dialogVisible"
       :work="work"
       @refreshList="getWorkPageList"
     ></work-add-dialog>
+
+    <!-- 绑定课程章节对话框 -->
+    <work-bind-dialog
+      :dialogVisible.sync="bindDialogVisible"
+      :workId="currentWorkId"
+      :teachplanId="currentTeachplanId"
+      @refreshList="getWorkPageList"
+    ></work-bind-dialog>
   </div>
 </template>
 
@@ -69,22 +83,16 @@
 import { Component, Vue, Watch } from 'vue-property-decorator'
 import Pagination from '@/components/pagination/index.vue'
 import WorkAddDialog from './components/work-add-dialog.vue'
+import WorkBindDialog from './components/work-bind-dialog.vue'
 import { IWorkPageList, IWorkDTO, IWorkVO } from '@/entity/work-page-list'
 import { getWorkPageList, deleteWork, defaultWork } from '@/api/works'
 
 @Component({
   components: {
     Pagination,
-    WorkAddDialog
+    WorkAddDialog,
+    WorkBindDialog
   },
-  filters: {
-    bindCoursesFormat: (value: string[]) => {
-      if (value == null || value.length == 0) {
-        return ''
-      }
-      return '《' + value.join('》，《') + '》'
-    }
-  }
 })
 export default class WorkList extends Vue {
   // 是否载入中
@@ -100,6 +108,12 @@ export default class WorkList extends Vue {
   private dialogVisible: boolean = false
   // 单条作业
   private work: IWorkVO = Object.assign({}, defaultWork)
+  // 绑定对话框
+  private bindDialogVisible: boolean = false
+  // 当前操作的作业ID
+  private currentWorkId: number = 0
+  // 当前操作的章节ID
+  private currentTeachplanId: number | null = null
 
   /**
    * 作业列表
@@ -126,6 +140,24 @@ export default class WorkList extends Vue {
     this.work.title = row.title
     this.work.question = row.question
     this.dialogVisible = true
+  }
+
+  /**
+   * 打开绑定对话框
+   */
+  private handleOpenBindDialog(row: IWorkDTO) {
+    // 确保 workId 有值，尝试多种可能的字段名
+    const workId = row.workId || (row as any).id || (row as any).work_id
+    
+    if (!workId || workId === 0) {
+      this.$message.error('作业ID不存在，无法绑定')
+      return
+    }
+    
+    this.currentWorkId = workId
+    // 传递 teachplanId（如果有的话）
+    this.currentTeachplanId = row.teachplanId || (row as any).teachplan_id || null
+    this.bindDialogVisible = true
   }
 
   /**

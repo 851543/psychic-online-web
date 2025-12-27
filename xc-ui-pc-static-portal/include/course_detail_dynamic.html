@@ -213,19 +213,55 @@
             company_stat:[],
             course_stat:{"s601001":"","s601002":"","s601003":""},
             qrcode:'',
-			payNo:''
+			payNo:'',
+            // 评论相关
+            commentText: '',
+            currentStarScore: 5,
+            selectedStarScore: 5,
+            starScoreWidth: 0,
+            courseName: '',
+            submittingComment: false,
+            // 评论列表相关
+            commentList: {
+                items: [],
+                counts: 0,
+                pageNo: 1,
+                pageSize: 10,
+                loading: false,
+                hasMore: false
+            },
+            // 评论筛选
+            commentFilter: {
+                level: 2, // 2:全部, 1:好评, 0:中评, -1:差评
+                targetName: ''
+            },
+            // 评论统计数据
+            commentStats: {
+                avgScore: 0,
+                totalCount: 0,
+                starPercent: {
+                    5: 0,
+                    4: 0,
+                    3: 0,
+                    2: 0,
+                    1: 0
+                }
+            }
 
         },
         methods: {
             //马上学习
             startLearning(){
-                
                  if(String(window.location).indexOf("/coursepreview/")>0){
                     window.location.href="http://localhost:88/course/preview/learning.html?id="+this.courseId
                     return ;
                 }
                 let activeUser= getActiveUser();
-                if(activeUser){
+                if(activeUser == undefined){
+                    //弹出登录框架
+                    showlogin()
+                    return;
+                }else if(activeUser){
                     //判断学习资格
                     this.getLearningStatus();
                 }else{
@@ -417,18 +453,337 @@
                     (res) => {
                         this.editLoading = false;
                     });
+            },
+            // 更新星级评分（鼠标移动时）
+            updateStarScore(e){
+                var startX = $(e.currentTarget).offset().left;
+                var movX = e.clientX - startX + 0.5;
+                // 计算精确分数（0-5之间的小数）
+                var exactScore = movX / 145 * 5;
+                if(exactScore < 0) exactScore = 0;
+                if(exactScore > 5) exactScore = 5;
+                // 显示时保留一位小数
+                this.currentStarScore = parseFloat(exactScore.toFixed(1));
+                var w = 145 * (1 - exactScore / 5);
+                this.starScoreWidth = w;
+            },
+            // 设置星级评分（点击时）
+            setStarScore(e){
+                // 先更新一次显示值（使用和 updateStarScore 相同的计算方式）
+                // 这样即使没有移动鼠标，点击时也能正确计算
+                var startX = $(e.currentTarget).offset().left;
+                var movX = e.clientX - startX + 0.5;
+                var exactScore = movX / 145 * 5;
+                if(exactScore < 0) exactScore = 0;
+                if(exactScore > 5) exactScore = 5;
+                // 更新显示值（保留一位小数）
+                this.currentStarScore = parseFloat(exactScore.toFixed(1));
+                // 使用显示的值保存，确保显示和保存完全一致
+                this.selectedStarScore = this.currentStarScore;
+                // 更新星级条宽度
+                var w = 145 * (1 - exactScore / 5);
+                this.starScoreWidth = w;
+            },
+            // 重置星级评分（鼠标离开时）
+            resetStarScore(){
+                // 显示选中的精确分数
+                this.currentStarScore = this.selectedStarScore;
+                var w = 145 * (1 - this.selectedStarScore / 5);
+                this.starScoreWidth = w;
+            },
+            // 发表评论
+            submitComment(){
+                if(this.submittingComment) return;
+                if(!this.canSubmit){
+                    this.$message.warning('请填写评论内容并选择评分');
+                    return;
+                }
+                
+                let activeUser = getActiveUser();
+                if(!activeUser){
+                    showlogin();
+                    return;
+                }
+
+                if(String(window.location).indexOf("/coursepreview/")>0){
+                    this.$message.warning('预览模式不能评论');
+                    return;
+                }
+
+                let ensureCourseCharge = () => {
+                    let localCharge = this.charge;
+                    if(localCharge !== undefined && localCharge !== null && String(localCharge) !== ''){
+                        return Promise.resolve({
+                            charge: String(localCharge),
+                            isFree: String(localCharge) === '201000'
+                        });
+                    }
+
+                    let prefix = String(window.location).indexOf('/preview/') > 0 ? '/open' : '/api';
+                    return requestGet(prefix + '/content/course/whole/' + this.courseId, {}).then((courseRes) => {
+                        let charge = '';
+                        if(courseRes && courseRes.courseBase && courseRes.courseBase.charge !== undefined && courseRes.courseBase.charge !== null){
+                            charge = courseRes.courseBase.charge;
+                            this.charge = charge;
+                        }
+                        let isFree = String(charge) === '201000';
+                        if(!isFree && courseRes && courseRes.courseMarket && courseRes.courseMarket.price !== undefined && courseRes.courseMarket.price !== null){
+                            let price = parseFloat(courseRes.courseMarket.price);
+                            if(isFinite(price) && price <= 0){
+                                isFree = true;
+                            }
+                        }
+                        return { charge: String(charge || ''), isFree: isFree };
+                    }).catch(() => {
+                        return { charge: String(this.charge || ''), isFree: String(this.charge) === '201000' };
+                    });
+                };
+
+                let doSubmit = () => {
+                    this.submittingComment = true;
+                    
+                    // 获取课程信息
+                    let courseName = this.courseName || '课程';
+                    
+                    // 构建评论数据
+                    // 注意：selectedStarScore 是精确的小数值（0-5之间，保留一位小数，如2.4）
+                    let commentData = {
+                        targetId: this.courseId,
+                        targetName: courseName,
+                        targetType: 'course',
+                        starRank: this.selectedStarScore,
+                        commentText: this.commentText.trim(),
+                        comeFrom: courseName
+                    };
+                    
+                    // 调用API发表评论
+                    requestPost('/api/content/course-comment', commentData).then((res) => {
+                        this.submittingComment = false;
+                        this.$message.success('评论发表成功！');
+                            // 清空表单
+                            this.commentText = '';
+                            this.selectedStarScore = 5;
+                            this.currentStarScore = 5;
+                            this.starScoreWidth = 0;
+                            // 刷新评论列表
+                            this.loadCommentList(true);
+                    }).catch((error) => {
+                        this.submittingComment = false;
+                        if(error && error.response && error.response.data && error.response.data.errMessage){
+                            this.$message.error(error.response.data.errMessage);
+                        } else {
+                            this.$message.error('发表评论失败，请稍后重试');
+                        }
+                    });
+                };
+
+                ensureCourseCharge().then((info) => {
+                    if(info && info.isFree){
+                        doSubmit();
+                        return;
+                    }
+
+                    queryLearnstatus(this.courseId).then((res)=>{
+                        if(res && res.learnStatus){
+                            if(res.learnStatus != '702001'){
+                                if(res.learnStatus == '702002'){
+                                    this.$message.warning('购买/报名后才能评论');
+                                }else{
+                                    this.$message.warning('暂无学习资格，无法评论');
+                                }
+                                return;
+                            }
+                        }else{
+                            this.$message.warning('无法获取学习资格');
+                            return;
+                        }
+
+                        doSubmit();
+                    }).catch((error)=>{
+                        this.$message.error('无法获取学习资格');
+                    });
+                });
+            },
+            // 加载评论列表
+            loadCommentList(reset = false){
+                if(this.commentList.loading) return;
+                
+                if(reset){
+                    this.commentList.pageNo = 1;
+                    this.commentList.items = [];
+                }
+                
+                this.commentList.loading = true;
+                
+                // 构建请求参数
+                let body = {
+                    pageNo: this.commentList.pageNo,
+                    pageSize: this.commentList.pageSize
+                };
+                
+                if(this.commentFilter.targetName){
+                    body.targetName = this.commentFilter.targetName;
+                }
+                if(this.commentFilter.level != 2){
+                    body.level = this.commentFilter.level;
+                }
+                // 添加课程ID
+                body.targetId = this.courseId;
+                body.targetType = 'course';
+                
+                // 使用POST请求，分页参数放在body中
+                requestPost('/api/content/course-comment/list?pageNo=' + this.commentList.pageNo + '&pageSize=' + this.commentList.pageSize, body).then((res) => {
+                    this.commentList.loading = false;
+                    if(res && res.items){
+                        // 处理数据，确保starRank是数字类型
+                        var processedItems = res.items.map(function(item){
+                            // 确保starRank是数字类型
+                            if(item.starRank !== undefined && item.starRank !== null){
+                                item.starRank = parseFloat(item.starRank);
+                            }
+                            // 确保回复列表存在
+                            if(item.courseCommentReplyList){
+                                item.courseCommentReplyList = item.courseCommentReplyList.map(function(reply){
+                                    return reply;
+                                });
+                            }
+                            return item;
+                        });
+                        
+                        if(reset){
+                            this.commentList.items = processedItems;
+                        } else {
+                            this.commentList.items = this.commentList.items.concat(processedItems);
+                        }
+                        this.commentList.counts = res.counts || 0;
+                        // 判断是否还有更多
+                        this.commentList.hasMore = this.commentList.items.length < this.commentList.counts;
+                        // 计算统计数据
+                        this.calculateCommentStats();
+                    }
+                }).catch((error) => {
+                    this.commentList.loading = false;
+                    console.error('加载评论列表失败:', error);
+                });
+            },
+            // 计算评论统计数据
+            calculateCommentStats(){
+                let items = this.commentList.items;
+                if(!items || items.length === 0){
+                    this.commentStats.avgScore = 0;
+                    this.commentStats.totalCount = 0;
+                    this.commentStats.starPercent = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+                    this.updateBannerScoreDisplay(this.commentStats.avgScore);
+                    return;
+                }
+                
+                // 计算平均分
+                let totalScore = 0;
+                let starCount = {5: 0, 4: 0, 3: 0, 2: 0, 1: 0};
+                
+                items.forEach(item => {
+                    if(item.starRank){
+                        totalScore += item.starRank;
+                        // 根据评分判断星级（4-5好评，2-3中评，0-1差评）
+                        let star = Math.round(item.starRank);
+                        if(star >= 5) starCount[5]++;
+                        else if(star >= 4) starCount[4]++;
+                        else if(star >= 3) starCount[3]++;
+                        else if(star >= 2) starCount[2]++;
+                        else starCount[1]++;
+                    }
+                });
+                
+                this.commentStats.avgScore = items.length > 0 ? (totalScore / items.length).toFixed(1) : 0;
+                this.commentStats.totalCount = this.commentList.counts;
+                this.updateBannerScoreDisplay(this.commentStats.avgScore);
+                
+                // 计算百分比
+                let total = items.length;
+                for(let i = 1; i <= 5; i++){
+                    this.commentStats.starPercent[i] = total > 0 ? Math.round(starCount[i] / total * 100) : 0;
+                }
+            },
+            // 获取头像URL
+            getAvatarUrl(userHead){
+                if(!userHead) return '/static/img/studyuser.png';
+                // 如果已经是完整URL，直接返回
+                if(userHead.startsWith('http://') || userHead.startsWith('https://')){
+                    return userHead;
+                }
+                // 否则加上服务器前缀（需要根据实际环境变量配置）
+                var picServerUrl = window.VUE_APP_SERVER_PICSERVER_URL || 'http://localhost:9000';
+                return picServerUrl + userHead;
+            },
+            // 格式化日期
+            formatDate(dateStr){
+                if(!dateStr) return '';
+                try{
+                    var date = new Date(dateStr);
+                    var year = date.getFullYear();
+                    var month = String(date.getMonth() + 1).padStart(2, '0');
+                    var day = String(date.getDate()).padStart(2, '0');
+                    return year + '-' + month + '-' + day;
+                }catch(e){
+                    return dateStr;
+                }
+            },
+            updateBannerScoreDisplay(score){
+                var $span = $('.banner-info .info span').filter(function(){
+                    return $(this).find('em').first().text().trim() === '评分';
+                }).first();
+                if($span.length === 0){
+                    return;
+                }
+                var numScore = parseFloat(score);
+                if(!isFinite(numScore)){
+                    numScore = 0;
+                }
+                $span.html('<em>评分</em>' + numScore.toFixed(1) + '分');
+            },
+            // 获取星级文本
+            getStarText(starRank){
+                if(starRank === undefined || starRank === null || starRank === '') return '0星';
+                // 确保是数字类型
+                var star = Math.round(parseFloat(starRank));
+                var starText = ['空', '一', '二', '三', '四', '五'];
+                return (starText[star] || star) + '星';
+            },
+            // 计算星星填充宽度（支持小数评分）
+            getStarFillWidth(score, starIndex){
+                if(!score || score <= 0) return 0;
+                var numScore = parseFloat(score);
+                if(numScore >= starIndex) return 100; // 完全填充
+                if(numScore < starIndex - 1) return 0; // 不填充
+                // 部分填充：计算当前星星的填充百分比
+                var fillPercent = (numScore - (starIndex - 1)) * 100;
+                return Math.max(0, Math.min(100, fillPercent));
             }
 
+        },
+        computed: {
+            // 是否可以提交评论
+            canSubmit(){
+                return this.commentText.trim().length > 0 && this.selectedStarScore > 0 && !this.submittingComment;
+            }
         },
        created() {
 
            this.courseId = courseId;
            this.charge = courseCharge;
+           // 初始化星级评分
+           this.starScoreWidth = 145 * (1 - this.selectedStarScore / 5);
 
         },
         mounted(){
            // alert(courseId)
-
+           // 获取课程名称（如果页面有显示）
+           var courseTitle = $('.banner-info .tit').text();
+           if(courseTitle){
+               this.courseName = courseTitle.trim();
+           }
+           // 加载评论列表
+           this.loadCommentList(true);
         }
 
     })

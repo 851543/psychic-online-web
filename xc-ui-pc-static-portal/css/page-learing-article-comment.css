@@ -1020,8 +1020,33 @@ em, i {
   height: 19px;
   margin-top: 0px;
   display: inline-block;
-  background: url(../img/asset-star-show.png) no-repeat;
+  position: relative;
+  background: url(../img/asset-stara.png) no-repeat;
   background-size: contain;
+  overflow: hidden;
+}
+
+.star-show::before {
+  content: '';
+  display: none;
+}
+
+.star-show .score {
+  width: 0px;
+  height: 19px;
+  float: right;
+  display: inline-block;
+  position: relative;
+  background: url(../img/asset-starGreya.png) top right no-repeat;
+  background-size: contain;
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.star-show .score::before {
+  content: '';
+  display: none;
 }
 
 .star-show .score i {

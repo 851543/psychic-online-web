@@ -161,10 +161,10 @@ import {
   moveUpSubmit,
   getOutline,
   mediaAssociation,
-  workAssociation,
   mediaUnAssociation,
   workUnAssociation
 } from '@/api/courses'
+import { workAssociation } from '@/api/teaching'
 import { ICourseOutlineTreeNode } from '@/entity/course-add-outline'
 import OutlineSelectDialog from './course-add-step2-select-dialog.vue'
 import MixinTools from '@/utils/mixins.vue'

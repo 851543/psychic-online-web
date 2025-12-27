@@ -10,7 +10,7 @@ export async function getCourseCommentPageList(
   body: any
 ): Promise<ICourseCommentPageVO> {
   const { data } = await createAPI(
-    '/teaching/course-comment/list',
+    '/content/course-comment/list',
     'post',
     params,
     body
@@ -21,7 +21,7 @@ export async function getCourseCommentPageList(
 // 课程评论回复
 export async function replyCourseComment(body: any): Promise<ICommentReplyDTO> {
   const { data } = await createAPI(
-    '/teaching/course-comment-reply',
+    '/content/course-comment-reply',
     'post',
     null,
     body
