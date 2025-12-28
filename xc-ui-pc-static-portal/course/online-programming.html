@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../img/asset-favicon.ico">
+    <title>通灵在线</title>
+
+    <link rel="stylesheet" href="http://localhost:88/static/plugins/normalize-css/normalize.css" />
+    <link rel="stylesheet" href="http://localhost:88/static/plugins/bootstrap/dist/css/bootstrap.css" />
+    <link rel="stylesheet" href="http://localhost:88/static/css/page-header.css" />
+    <link rel="stylesheet" href="http://localhost:88/static/css/page-learing-list.css" />
+    <link rel="stylesheet" href="http://localhost:88/static/css/main.css" />
+
+    <link rel="stylesheet" href="http://localhost:88/static/css/codemirror/codemirror.min.css" />
+    <link rel="stylesheet" href="http://localhost:88/static/css/codemirror/theme/idea.min.css" />
+
+    <style>
+        .op-wrap {
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .op-card {
+            background: #fff;
+            border: 1px solid #e6e8eb;
+            border-radius: 6px;
+            padding: 16px;
+        }
+
+        .op-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .op-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .op-textarea {
+            width: 100%;
+            min-height: 360px;
+            resize: vertical;
+            font-family: Consolas, "SFMono-Regular", Menlo, Monaco, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            border: 1px solid #dde2e6;
+            border-radius: 6px;
+            padding: 10px;
+            outline: none;
+        }
+
+        .op-textarea:focus {
+            border-color: #00a4ff;
+            box-shadow: 0 0 0 2px rgba(0, 164, 255, 0.15);
+        }
+
+        .CodeMirror {
+            height: 360px;
+            border: 1px solid #dde2e6;
+            border-radius: 6px;
+            font-family: Consolas, "SFMono-Regular", Menlo, Monaco, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .op-section {
+            margin-top: 12px;
+        }
+
+        .op-section-hd {
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .op-desc {
+            min-height: 450px;
+        }
+
+        .op-side-hd {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #eef0f3;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+
+        .op-side-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .op-side-actions .btn {
+            padding: 6px 14px;
+            border-radius: 6px;
+        }
+
+        .op-panel {
+            border: 1px solid #dde2e6;
+            border-radius: 6px;
+            background: #0b1020;
+            color: #e7eefc;
+            padding: 10px;
+            min-height: 360px;
+            overflow: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: Consolas, "SFMono-Regular", Menlo, Monaco, "Liberation Mono", "Courier New", monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .op-meta {
+            margin-top: 10px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .op-danger {
+            color: #dc3545;
+        }
+
+        .op-muted {
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+<!-- 页面头部 -->
+<!--#include virtual="/include/header.html"-->
+
+<div class="container op-wrap" id="codeRunnerApp" v-cloak>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="op-card">
+                <p class="op-title">在线编程</p>
+
+                <div class="op-toolbar" style="margin-top: 10px;">
+                    <div class="form-inline">
+                        <label class="op-muted" style="margin-right: 6px;">语言</label>
+                        <select class="form-control" v-model="language" @change="onLanguageChange">
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" :disabled="running" @click="runCode">{{ running ? '运行中...' : '运行' }}</button>
+                    <button type="button" class="btn btn-default" :disabled="running" @click="reset">重置代码</button>
+                    <button type="button" class="btn btn-default" :disabled="running" @click="clearResult">清空输出</button>
+                </div>
+
+                <div class="op-section">
+                    <div class="op-section-hd"><span>代码示例</span><span class="op-muted">支持高亮/行号/括号匹配</span></div>
+                    <textarea id="codeEditor" class="op-textarea"></textarea>
+                </div>
+
+                <div class="op-section">
+                    <div class="op-section-hd">
+                        <span>输出</span>
+                        <span class="op-muted" v-if="lastExitCode !== null">退出码：{{ lastExitCode }}<span v-if="lastSignal">，信号：{{ lastSignal }}</span></span>
+                    </div>
+                    <div class="op-panel">{{ outputText }}</div>
+                    <div class="op-meta">
+                        <div v-if="errorMessage" class="op-danger">{{ errorMessage }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="op-card">
+                <div class="op-side-hd">
+                    <div class="op-side-title">能力提升</div>
+                    <div class="op-side-actions">
+                        <button type="button" class="btn btn-primary" :disabled="aiRunning" @click="runAiAnswer">{{ aiRunning ? '智能辅导中...' : '智能辅导' }}</button>
+                    </div>
+                </div>
+                <textarea class="op-textarea op-desc" v-model="problemText" placeholder="题目描述"></textarea>
+                <div class="op-section" style="margin-top: 12px;" v-if="aiResult">
+                    <div class="op-section-hd"><span>智能辅导结果</span></div>
+                    <div class="op-textarea" style="min-height: 0; height: auto; resize: none; background: #fff; color: #333; overflow: visible; white-space: pre-wrap;" v-text="aiResult"></div>
+                </div>
+                <div class="op-meta" v-if="aiErrorMessage">
+                    <div class="op-danger">{{ aiErrorMessage }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--底部版权-->
+<!--#include virtual="/include/footer.html"-->
+
+<script src="http://localhost:88/static/js/codemirror/codemirror.min.js"></script>
+<script src="http://localhost:88/static/js/codemirror/mode/python/python.min.js"></script>
+<script src="http://localhost:88/static/js/codemirror/mode/clike/clike.min.js"></script>
+<script src="http://localhost:88/static/js/codemirror/addon/edit/matchbrackets.min.js"></script>
+<script src="http://localhost:88/static/js/codemirror/addon/edit/closebrackets.min.js"></script>
+<script src="http://localhost:88/static/js/codemirror/addon/selection/active-line.min.js"></script>
+<script src="http://localhost:88/static/js/codemirror/addon/comment/comment.js"></script>
+
+<script>
+    (function () {
+        new Vue({
+            el: '#codeRunnerApp',
+            data: {
+                language: 'java',
+                code: '',
+                outputText: '',
+                running: false,
+                errorMessage: '',
+                lastExitCode: null,
+                lastSignal: '',
+                codeDirty: false,
+                editor: null,
+                programmaticUpdate: false,
+                problemText: '',
+                aiResult: '',
+                aiRunning: false,
+                aiErrorMessage: '',
+                templates: {
+                    python: 'print("Hello, world!")\n',
+                    java: 'public class Main {\n    public static void main(String[] args) throws Exception {\n        System.out.println("Hello, world!");\n    }\n}\n'
+                }
+            },
+            methods: {
+                runAiAnswer: function () {
+                    var _this = this;
+                    this.aiRunning = true;
+                    this.aiErrorMessage = '';
+                    this.aiResult = '';
+
+                    if (this.editor && typeof this.editor.getValue === 'function') {
+                        this.code = this.editor.getValue();
+                    }
+
+                    var payload = {
+                        language: this.language,
+                        code: this.code,
+                        problemText: this.problemText
+                    };
+
+                    axios.post('http://localhost:10095/ai/answer', payload, { timeout: 60000 }).then(function (res) {
+                        var data = res && res.data ? res.data : null;
+                        if (data && typeof data.code !== 'undefined') {
+                            if (data.code !== 0) {
+                                _this.aiErrorMessage = data.msg || '智能辅导失败';
+                                return;
+                            }
+                            var result = typeof data.result !== 'undefined' ? data.result : '';
+                            if (result && typeof result === 'object') {
+                                if (typeof result.answer === 'string') {
+                                    _this.aiResult = result.answer;
+                                    return;
+                                }
+                                if (typeof result.content === 'string') {
+                                    _this.aiResult = result.content;
+                                    return;
+                                }
+                                _this.aiResult = JSON.stringify(result);
+                                return;
+                            }
+                            if (typeof result === 'string') {
+                                _this.aiResult = result;
+                                return;
+                            }
+                            _this.aiResult = '';
+                            return;
+                        }
+
+                        if (typeof data === 'string') {
+                            _this.aiResult = data;
+                            return;
+                        }
+                        _this.aiResult = data ? JSON.stringify(data) : '';
+                    }).catch(function (err) {
+                        var msg = (err && err.message) ? err.message : '智能辅导失败';
+                        if (err && err.response && err.response.data) {
+                            try {
+                                msg = JSON.stringify(err.response.data);
+                            } catch (e) {
+                            }
+                        }
+                        _this.aiErrorMessage = msg;
+                    }).finally(function () {
+                        _this.aiRunning = false;
+                    });
+                },
+                applyEditorMode: function () {
+                    if (!this.editor) {
+                        return;
+                    }
+                    if (this.language === 'python') {
+                        this.editor.setOption('mode', 'python');
+                    } else if (this.language === 'java') {
+                        this.editor.setOption('mode', 'text/x-java');
+                    }
+                },
+                setCode: function (newCode) {
+                    this.programmaticUpdate = true;
+                    this.code = newCode;
+                    if (this.editor && typeof this.editor.setValue === 'function') {
+                        this.editor.setValue(newCode);
+                    } else {
+                        var ta = document.getElementById('codeEditor');
+                        if (ta) {
+                            ta.value = newCode;
+                        }
+                    }
+                    this.programmaticUpdate = false;
+                },
+                onLanguageChange: function () {
+                    this.applyEditorMode();
+                    if (!this.codeDirty) {
+                        this.setCode(this.templates[this.language]);
+                    }
+                    this.clearResult();
+                },
+                clearResult: function () {
+                    this.outputText = '';
+                    this.errorMessage = '';
+                    this.lastExitCode = null;
+                    this.lastSignal = '';
+                },
+                reset: function () {
+                    this.codeDirty = false;
+                    this.setCode(this.templates[this.language]);
+                    this.clearResult();
+                },
+                getSelectedRuntime: function () {
+                    if (this.language === 'python') return { language: 'python', version: '*' };
+                    if (this.language === 'java') return { language: 'java', version: '15.0.2' };
+                    return null;
+                },
+                buildFiles: function () {
+                    if (this.language === 'python') {
+                        return [{ name: 'main.py', content: this.code }];
+                    }
+                    if (this.language === 'java') {
+                        return [{ name: 'Main.java', content: this.code }];
+                    }
+                    return [{ name: 'main.txt', content: this.code }];
+                },
+                runCode: function () {
+                    var _this = this;
+                    this.running = true;
+                    this.clearResult();
+
+                    if (this.editor && typeof this.editor.getValue === 'function') {
+                        this.code = this.editor.getValue();
+                    } else {
+                        var ta = document.getElementById('codeEditor');
+                        if (ta) {
+                            this.code = ta.value;
+                        }
+                    }
+
+                    var payload = {
+                        language: this.language,
+                        code: this.code
+                    };
+
+                    axios.post('http://localhost:88/api/teaching/code/run', payload, { timeout: 30000 }).then(function (res) {
+                        var data = res && res.data ? res.data : {};
+                        if (!data || typeof data.code === 'undefined') {
+                            _this.errorMessage = '运行失败：响应格式错误';
+                            return;
+                        }
+                        if (data.code !== 0) {
+                            _this.errorMessage = data.msg || '运行失败';
+                            return;
+                        }
+
+                        var result = data.result ? data.result : {};
+                        var parts = [];
+                        if (result.stdout) {
+                            parts.push(result.stdout);
+                        }
+                        if (result.stderr) {
+                            if (parts.length) parts.push('');
+                            parts.push(result.stderr);
+                        }
+                        if (result.timeout) {
+                            if (parts.length) parts.push('');
+                            parts.push('--- timeout ---');
+                        }
+                        if (typeof result.durationMs !== 'undefined' && result.durationMs !== null) {
+                            if (parts.length) parts.push('');
+                            parts.push('durationMs: ' + result.durationMs);
+                        }
+                        _this.outputText = parts.join('\n');
+                        _this.lastExitCode = typeof result.exitCode !== 'undefined' ? result.exitCode : null;
+                        _this.lastSignal = '';
+                    }).catch(function (err) {
+                        var msg = (err && err.message) ? err.message : '运行失败';
+                        if (err && err.response && err.response.data) {
+                            try {
+                                msg = JSON.stringify(err.response.data);
+                            } catch (e) {
+                            }
+                        }
+                        _this.errorMessage = msg;
+                    }).finally(function () {
+                        _this.running = false;
+                    });
+                }
+            },
+            created: function () {
+                this.code = this.templates[this.language];
+            },
+            mounted: function () {
+                var _this = this;
+                var textarea = document.getElementById('codeEditor');
+                if (!textarea) {
+                    return;
+                }
+
+                if (typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function') {
+                    this.editor = CodeMirror.fromTextArea(textarea, {
+                        lineNumbers: true,
+                        theme: 'idea',
+                        indentUnit: 4,
+                        tabSize: 4,
+                        smartIndent: true,
+                        matchBrackets: true,
+                        autoCloseBrackets: true,
+                        styleActiveLine: true,
+                        extraKeys: {
+                            'Ctrl-/': 'toggleComment',
+                            'Cmd-/': 'toggleComment'
+                        },
+                        viewportMargin: Infinity
+                    });
+
+                    this.programmaticUpdate = true;
+                    this.editor.setValue(this.code || '');
+                    this.programmaticUpdate = false;
+
+                    this.applyEditorMode();
+
+                    this.editor.on('change', function (cm) {
+                        if (_this.programmaticUpdate) {
+                            return;
+                        }
+                        _this.code = cm.getValue();
+                        _this.codeDirty = true;
+                    });
+                } else {
+                    textarea.value = this.code || '';
+                    textarea.addEventListener('input', function () {
+                        _this.code = textarea.value;
+                        _this.codeDirty = true;
+                    });
+                }
+            }
+        });
+    })();
+</script>
+
+</body>
+
+</html>
