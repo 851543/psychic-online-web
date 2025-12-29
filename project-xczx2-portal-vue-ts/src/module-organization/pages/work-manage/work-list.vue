@@ -32,7 +32,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="userNum" label="答题人数" align="center"></el-table-column>
+        <!-- <el-table-column prop="userNum" label="答题人数" align="center"></el-table-column> -->
 
         <el-table-column label="修改时间" align="center">
           <template slot-scope="scope">{{ scope.row.changeDate | dateTimeFormat }}</template>

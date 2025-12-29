@@ -432,7 +432,7 @@ export default class extends mixins(MixinTools) {
       await workAssociation(
         this.curSelectNode.teachPlanId,
         ret.value.workId,
-        ret.value.title
+        this.courseBaseId
       )
     }
     this.getList()

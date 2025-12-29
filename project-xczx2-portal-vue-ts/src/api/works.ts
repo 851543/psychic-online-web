@@ -26,3 +26,8 @@ export async function deleteWork(workId: number): Promise<IWorkDTO> {
   const { data } = await createAPI(`/teaching/work/${workId}`, 'delete')
   return data
 }
+
+export async function getCourseWorkList(courseId: number): Promise<any[]> {
+  const { data } = await createAPI(`/teaching/work/${courseId}`, 'get')
+  return data
+}

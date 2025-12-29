@@ -40,7 +40,7 @@ export default class WorkRecordCorrectionDialog extends Vue {
    */
   private async handleCorrectionWorkRecord() {
     let correction = {
-      workRecordId: this.workRecord.workRecordId,
+      id: this.workRecord.workRecordId,
       correctComment: this.workRecord.correctComment
     }
 

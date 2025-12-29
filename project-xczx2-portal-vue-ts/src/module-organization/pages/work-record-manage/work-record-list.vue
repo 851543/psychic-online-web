@@ -6,14 +6,14 @@
       </div>
 
       <!-- 搜索栏 -->
-      <div class="searcher">
+      <!-- <div class="searcher">
         <el-input
           class="el-input"
           placeholder="请输入课程名称"
           suffix-icon="el-icon-search"
           v-model="listQueryData.courseName"
         />
-      </div>
+      </div> -->
 
       <!-- 数据列表 -->
       <el-table
@@ -66,8 +66,9 @@
 <script lang="ts">
 import { Component, Vue, Watch } from 'vue-property-decorator'
 import Pagination from '@/components/pagination/index.vue'
-import { IWorkRecordPageVO } from '@/entity/work-record-page-list'
+import { IWorkRecordPageVO, ICourseWorkDTO } from '@/entity/work-record-page-list'
 import { getWorkRecordPageList } from '@/api/work-record'
+import { getBaseInfo } from '@/api/courses'
 
 @Component({
   components: {
@@ -77,6 +78,7 @@ import { getWorkRecordPageList } from '@/api/work-record'
 export default class WorkRecordList extends Vue {
   // 是否载入中
   private listLoading: boolean = false
+  private courseNameCache: { [key: string]: string } = {}
   // 请求参数Query
   private listQuery = {
     pageNo: 1,
@@ -94,11 +96,125 @@ export default class WorkRecordList extends Vue {
    */
   private async getWorkRecordPageList() {
     this.listLoading = true
-    this.listResult = await getWorkRecordPageList(
-      this.listQuery,
-      this.listQueryData
-    )
-    this.listLoading = false
+    try {
+      const res = await getWorkRecordPageList({ pageNo: 1, pageSize: 10000 }, {})
+      const raw = this.normalizePageResult(res)
+      const recordItems: any[] = (raw && (raw as any).items) ? ((raw as any).items as any[]) : []
+
+      const courseAgg: { [key: string]: any } = {}
+      recordItems.forEach((r: any) => {
+        if (!r) return
+        const courseId = r.courseId
+        if (courseId === undefined || courseId === null || String(courseId) === '') return
+        const key = String(courseId)
+        if (!courseAgg[key]) {
+          courseAgg[key] = {
+            courseId,
+            usernames: {},
+            tobeReviewed: 0,
+            commitedTime: '',
+            reviewedTime: ''
+          }
+        }
+        const agg = courseAgg[key]
+        const username = r.username ? String(r.username) : ''
+        if (username) {
+          agg.usernames[username] = true
+        }
+        if (String(r.status || '') === '306002') {
+          agg.tobeReviewed++
+        }
+        const submitTime = r.submitDate || r.createDate || r.changeDate || ''
+        if (submitTime && (!agg.commitedTime || String(submitTime) > String(agg.commitedTime))) {
+          agg.commitedTime = submitTime
+        }
+        const reviewTime = r.correctionDate || ''
+        if (reviewTime && (!agg.reviewedTime || String(reviewTime) > String(agg.reviewedTime))) {
+          agg.reviewedTime = reviewTime
+        }
+      })
+
+      const courseIds = Object.keys(courseAgg)
+      await Promise.all(
+        courseIds.map(async (cid) => {
+          if (this.courseNameCache[cid] !== undefined) {
+            return
+          }
+          try {
+            const info: any = await getBaseInfo(parseInt(cid, 10))
+            this.courseNameCache[cid] = info && (info.name || info.courseName) ? String(info.name || info.courseName) : ''
+          } catch (e) {
+            this.courseNameCache[cid] = ''
+          }
+        })
+      )
+
+      let summaryItems: ICourseWorkDTO[] = courseIds.map((cid) => {
+        const agg = courseAgg[cid]
+        return {
+          courseWorkId: agg.courseId,
+          courseName: this.courseNameCache[cid] || '',
+          totalUsers: Object.keys(agg.usernames || {}).length,
+          tobeReviewed: agg.tobeReviewed || 0,
+          commitedTime: agg.commitedTime || '',
+          reviewedTime: agg.reviewedTime || ''
+        }
+      })
+
+      const keyword = this.listQueryData && this.listQueryData.courseName ? String(this.listQueryData.courseName).trim() : ''
+      if (keyword) {
+        summaryItems = summaryItems.filter((it) => String((it && it.courseName) || '').indexOf(keyword) >= 0)
+      }
+
+      summaryItems.sort((a: any, b: any) => {
+        const at = a && a.commitedTime ? String(a.commitedTime) : ''
+        const bt = b && b.commitedTime ? String(b.commitedTime) : ''
+        return bt.localeCompare(at)
+      })
+
+      const counts = summaryItems.length
+      const pageSize = this.listQuery.pageSize || 10
+      const pages = Math.max(1, Math.ceil(counts / pageSize))
+      const pageNo = Math.min(Math.max(this.listQuery.pageNo || 1, 1), pages)
+      const start = (pageNo - 1) * pageSize
+      const end = Math.min(start + pageSize, counts)
+
+      this.listResult = {
+        counts,
+        items: summaryItems.slice(start, end),
+        page: pageNo,
+        pages,
+        pageSize
+      }
+    } catch (e) {
+      this.listResult = {}
+    } finally {
+      this.listLoading = false
+    }
+  }
+
+  private normalizePageResult(res: any): IWorkRecordPageVO {
+    if (!res || typeof res !== 'object') {
+      return {}
+    }
+    const root: any = (res && (res.data || res.result)) ? (res.data || res.result) : res
+    const items = root.items || root.records || root.list || root.rows || []
+    const counts =
+      (typeof root.counts !== 'undefined' ? root.counts : undefined) ||
+      (typeof root.total !== 'undefined' ? root.total : undefined) ||
+      (typeof root.totalElements !== 'undefined' ? root.totalElements : undefined) ||
+      (typeof root.totalCount !== 'undefined' ? root.totalCount : undefined) ||
+      (Array.isArray(items) ? items.length : 0)
+    const page = root.page || root.pageNo || root.current || 1
+    const pageSize = root.pageSize || root.size || root.limit || this.listQuery.pageSize || 10
+    const pages = root.pages || root.totalPages || Math.max(1, Math.ceil((counts || 0) / (pageSize || 10)))
+    return {
+      counts,
+      items,
+      page,
+      pages,
+      pageSize
+    }
   }
 
   /**
@@ -106,7 +222,7 @@ export default class WorkRecordList extends Vue {
    */
   private goToWorkRecordReadOverAllView(courseWorkId: number) {
     this.$router.push({
-      path: `/organization/work-record-overall?courseWorkId=${courseWorkId}`
+      path: `/organization/work-record-overall?courseId=${courseWorkId}`
     })
   }
 
@@ -125,6 +241,8 @@ export default class WorkRecordList extends Vue {
   private watchListQueryPageSize(newVal: number) {
     this.listQuery.pageNo = 1
   }
+
+  private created() {}
 }
 </script>
 

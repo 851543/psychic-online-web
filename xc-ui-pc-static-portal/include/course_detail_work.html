@@ -1,0 +1,82 @@
+<div class="article-left-box">
+  <div class="comment-box">
+    <div class="course-evaluate">
+      <div class="top-tit">作业</div>
+      <div class="comment-item-box">
+        <div class="get-more" v-if="workListLoading">页面加载中...</div>
+        <div class="get-more" v-else-if="!workList || workList.length === 0">暂无作业</div>
+        <div class="item" v-else v-for="(w, index) in workList" :key="index">
+          <div class="item-left">
+            <p><img src="/static/img/studyuser.png" width="60px" alt=""></p>
+            <p>作业</p>
+          </div>
+          <div class="item-cent">
+            <p>{{ w.workTitle || '未命名作业' }}</p>
+            <p class="time">章节：{{ w.teachplanName }}</p>
+          </div>
+          <div class="item-rit">
+            <p>
+              <a href="javascript:;" @click.prevent="openWork(w)">{{ getWorkActionText(w) }}</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="workCodingModal" tabindex="-1" role="dialog" aria-labelledby="workCodingModalLabel">
+  <div class="modal-dialog" role="document" style="width: 92%; max-width: 1200px;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="workCodingModalLabel">在线编程 - {{ currentWork ? (currentWork.workTitle || '作业') : '作业' }}</h4>
+      </div>
+      <div class="modal-body" style="padding: 15px;">
+        <div class="row">
+          <div class="col-md-8">
+            <div class="form-inline" style="margin-bottom: 10px;">
+              <label style="margin-right: 6px;">语言</label>
+              <select class="form-control" v-model="workCodingLanguage" @change="onWorkCodingLanguageChange">
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+              </select>
+              <button type="button" class="btn btn-primary" style="margin-left: 10px;" :disabled="workCodingRunning" @click="runWorkCoding">{{ workCodingRunning ? '运行中...' : '运行' }}</button>
+              <button type="button" class="btn btn-default" style="margin-left: 6px;" :disabled="workCodingRunning" @click="resetWorkCoding">重置代码</button>
+              <button type="button" class="btn btn-default" style="margin-left: 6px;" :disabled="workCodingRunning" @click="clearWorkCodingResult">清空输出</button>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+              <textarea id="workCodingEditor" style="width: 100%; min-height: 360px;"></textarea>
+            </div>
+
+            <div>
+              <div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">
+                <span>输出</span>
+                <span v-if="workCodingLastExitCode !== null" style="float: right;">退出码：{{ workCodingLastExitCode }}<span v-if="workCodingLastSignal">，信号：{{ workCodingLastSignal }}</span></span>
+              </div>
+              <div style="border: 1px solid #dde2e6; border-radius: 6px; background: #0b1020; color: #e7eefc; padding: 10px; min-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-family: Consolas, Menlo, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.5;">{{ workCodingOutputText }}</div>
+              <div v-if="workCodingErrorMessage" style="margin-top: 8px; color: #dc3545;">{{ workCodingErrorMessage }}</div>
+            </div>
+          </div>
+
+          <div class="col-md-4">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <div style="font-size: 14px; font-weight: 600; color: #495057;">题目描述</div>
+              <div>
+                <button type="button" class="btn btn-success" style="margin-right: 8px;" :disabled="workCodingSubmitRunning || workCodingRunning" @click="submitWorkRecord">{{ workCodingSubmitRunning ? '提交中...' : '提交作业' }}</button>
+                <button type="button" class="btn btn-primary" :disabled="workCodingAiRunning" @click="runWorkCodingAiAnswer">{{ workCodingAiRunning ? '智能辅导中...' : '智能辅导' }}</button>
+              </div>
+            </div>
+            <textarea class="form-control" v-model="workCodingProblemText" readonly style="width: 100%; min-height: 590px; resize: vertical; font-family: Consolas, Menlo, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.5;" placeholder="题目描述"></textarea>
+            <div v-if="workCodingAiResult" style="margin-top: 12px;">
+              <div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">智能辅导结果</div>
+              <div class="form-control" style="width: 100%; height: auto; min-height: 120px; resize: none; background: #fff; color: #333; overflow: visible; white-space: pre-wrap;" v-text="workCodingAiResult"></div>
+            </div>
+            <div v-if="workCodingAiErrorMessage" style="margin-top: 10px; color: #dc3545;">{{ workCodingAiErrorMessage }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

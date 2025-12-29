@@ -246,6 +246,30 @@
                     2: 0,
                     1: 0
                 }
+            },
+            canShowWork: false,
+            workListLoading: false,
+            workList: [],
+            currentWork: null,
+            workCodingLanguage: 'java',
+            workCodingCode: '',
+            workCodingOutputText: '',
+            workCodingRunning: false,
+            workCodingErrorMessage: '',
+            workCodingLastExitCode: null,
+            workCodingLastSignal: '',
+            workCodingCodeDirty: false,
+            workCodingEditor: null,
+            workCodingProgrammaticUpdate: false,
+            workCodingProblemText: '',
+            workCodingAiResult: '',
+            workCodingAiRunning: false,
+            workCodingAiErrorMessage: '',
+            workCodingSubmitRunning: false,
+            workCodingAssetsPromise: null,
+            workCodingTemplates: {
+                python: 'print("Hello, world!")\n',
+                java: 'public class Main {\n    public static void main(String[] args) throws Exception {\n        System.out.println("Hello, world!");\n    }\n}\n'
             }
 
         },
@@ -666,6 +690,739 @@
                     console.error('加载评论列表失败:', error);
                 });
             },
+            normalizeListResponse(res){
+                if(Array.isArray(res)){
+                    return res;
+                }
+                if(res && Array.isArray(res.items)){
+                    return res.items;
+                }
+                if(res && res.data && Array.isArray(res.data.items)){
+                    return res.data.items;
+                }
+                if(res && Array.isArray(res.data)){
+                    return res.data;
+                }
+                if(res && Array.isArray(res.result)){
+                    return res.result;
+                }
+                if(res && res.result && Array.isArray(res.result.items)){
+                    return res.result.items;
+                }
+                return [];
+            },
+            normalizePageItems(res){
+                if(!res){
+                    return [];
+                }
+                if(Array.isArray(res)){
+                    return res;
+                }
+                if(res && Array.isArray(res.items)){
+                    return res.items;
+                }
+                if(res && res.data && Array.isArray(res.data.items)){
+                    return res.data.items;
+                }
+                if(res && res.result && Array.isArray(res.result.items)){
+                    return res.result.items;
+                }
+                if(res && Array.isArray(res.data)){
+                    return res.data;
+                }
+                if(res && Array.isArray(res.result)){
+                    return res.result;
+                }
+                return [];
+            },
+            buildTeachplanNameMap(treeNodes){
+                let map = {};
+                let traverse = (nodes) => {
+                    if(!nodes || !Array.isArray(nodes)){
+                        return;
+                    }
+                    nodes.forEach((n) => {
+                        if(!n){
+                            return;
+                        }
+                        let id = n.teachplanId || n.teachPlanId || n.id || n.teachplan_id || n.teach_plan_id;
+                        let name = n.pname || n.teachplanName || n.teachPlanName || n.title || n.name || '';
+                        if(id !== undefined && id !== null && String(id) !== ''){
+                            map[String(id)] = name;
+                        }
+                        let children = n.teachPlanTreeNodes || n.teachplanTreeNodes || n.children || n.nodes;
+                        if(children && Array.isArray(children) && children.length > 0){
+                            traverse(children);
+                        }
+                    });
+                };
+                traverse(treeNodes);
+                return map;
+            },
+            getWorkActionText(w){
+                if(!w){
+                    return '去完成';
+                }
+                let s = w.workRecordStatus || w.status || w.workStatus || '';
+                s = (s !== undefined && s !== null) ? String(s) : '';
+                if(s === '306002'){
+                    return '待批阅';
+                }
+                if(s === '306001'){
+                    return '去完成';
+                }
+                if(s === '306003'){
+                    return '已批阅';
+                }
+                if(s){
+                    return '去完成';
+                }
+                return '去完成';
+            },
+            refreshWorkPermission(){
+                this.canShowWork = false;
+                this.workList = [];
+                this.workListLoading = false;
+
+                let activeUser;
+                try{
+                    activeUser = getActiveUser();
+                }catch(e){
+                    activeUser = null;
+                }
+                if(!activeUser){
+                    return;
+                }
+
+                if(String(this.charge || '') === '201000'){
+                    this.canShowWork = true;
+                    this.loadWorkList();
+                    return;
+                }
+
+                try{
+                    if(typeof queryLearnstatus === 'function'){
+                        queryLearnstatus(this.courseId).then((res) => {
+                            if(res && String(res.learnStatus || '') === '702001'){
+                                this.canShowWork = true;
+                                this.loadWorkList();
+                            }
+                        }).catch(() => {});
+                        return;
+                    }
+                }catch(e){
+                }
+
+                try{
+                    requestPost('/api/learning/choosecourse/learnstatus/' + this.courseId).then((res) => {
+                        if(res && String(res.learnStatus || '') === '702001'){
+                            this.canShowWork = true;
+                            this.loadWorkList();
+                        }
+                    }).catch(() => {});
+                }catch(e){
+                }
+            },
+            ensureWorkCodingAssetsLoaded(){
+                if(this.workCodingAssetsPromise){
+                    return this.workCodingAssetsPromise;
+                }
+                this.workCodingAssetsPromise = new Promise((resolve, reject) => {
+                    try{
+                        if(typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function'){
+                            resolve(true);
+                            return;
+                        }
+
+                        let loadCss = (href) => {
+                            try{
+                                if(document.querySelector('link[href="' + href + '"]')){
+                                    return;
+                                }
+                                let link = document.createElement('link');
+                                link.rel = 'stylesheet';
+                                link.href = href;
+                                document.head.appendChild(link);
+                            }catch(e){
+                            }
+                        };
+
+                        let loadScript = (src) => {
+                            return new Promise((res, rej) => {
+                                try{
+                                    if(document.querySelector('script[src="' + src + '"]')){
+                                        res(true);
+                                        return;
+                                    }
+                                    let s = document.createElement('script');
+                                    s.src = src;
+                                    s.onload = () => res(true);
+                                    s.onerror = () => rej(new Error('load failed: ' + src));
+                                    document.body.appendChild(s);
+                                }catch(e){
+                                    rej(e);
+                                }
+                            });
+                        };
+
+                        loadCss('/static/css/codemirror/codemirror.min.css');
+                        loadCss('/static/css/codemirror/theme/idea.min.css');
+
+                        loadScript('/static/js/codemirror/codemirror.min.js')
+                            .then(() => loadScript('/static/js/codemirror/mode/python/python.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/mode/clike/clike.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/edit/matchbrackets.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/edit/closebrackets.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/selection/active-line.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/comment/comment.js'))
+                            .then(() => {
+                                if(typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function'){
+                                    resolve(true);
+                                    return;
+                                }
+                                reject(new Error('CodeMirror not available'));
+                            })
+                            .catch((e) => reject(e));
+                    }catch(e){
+                        reject(e);
+                    }
+                });
+                return this.workCodingAssetsPromise;
+            },
+            applyWorkCodingEditorMode(){
+                if(!this.workCodingEditor){
+                    return;
+                }
+                if(this.workCodingLanguage === 'python'){
+                    this.workCodingEditor.setOption('mode', 'python');
+                    return;
+                }
+                if(this.workCodingLanguage === 'java'){
+                    this.workCodingEditor.setOption('mode', 'text/x-java');
+                    return;
+                }
+            },
+            setWorkCodingCode(newCode){
+                this.workCodingProgrammaticUpdate = true;
+                this.workCodingCode = newCode;
+                if(this.workCodingEditor && typeof this.workCodingEditor.setValue === 'function'){
+                    this.workCodingEditor.setValue(newCode);
+                }else{
+                    let ta = document.getElementById('workCodingEditor');
+                    if(ta){
+                        ta.value = newCode;
+                    }
+                }
+                this.workCodingProgrammaticUpdate = false;
+            },
+            initWorkCodingEditor(){
+                let textarea = document.getElementById('workCodingEditor');
+                if(!textarea){
+                    return;
+                }
+
+                if(this.workCodingEditor){
+                    try{
+                        this.applyWorkCodingEditorMode();
+                        if(typeof this.workCodingEditor.refresh === 'function'){
+                            this.workCodingEditor.refresh();
+                        }
+                    }catch(e){
+                    }
+                    return;
+                }
+
+                if(typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function'){
+                    let _this = this;
+                    this.workCodingEditor = CodeMirror.fromTextArea(textarea, {
+                        lineNumbers: true,
+                        theme: 'idea',
+                        indentUnit: 4,
+                        tabSize: 4,
+                        smartIndent: true,
+                        matchBrackets: true,
+                        autoCloseBrackets: true,
+                        styleActiveLine: true,
+                        extraKeys: {
+                            'Ctrl-/': 'toggleComment',
+                            'Cmd-/': 'toggleComment'
+                        },
+                        viewportMargin: Infinity
+                    });
+                    try{
+                        this.workCodingEditor.setSize(null, 360);
+                    }catch(e){
+                    }
+
+                    this.setWorkCodingCode(this.workCodingCode || this.workCodingTemplates[this.workCodingLanguage] || '');
+                    this.applyWorkCodingEditorMode();
+
+                    this.workCodingEditor.on('change', function(cm){
+                        if(_this.workCodingProgrammaticUpdate){
+                            return;
+                        }
+                        _this.workCodingCode = cm.getValue();
+                        _this.workCodingCodeDirty = true;
+                    });
+                }else{
+                    textarea.value = this.workCodingCode || this.workCodingTemplates[this.workCodingLanguage] || '';
+                    let _this = this;
+                    textarea.addEventListener('input', function(){
+                        _this.workCodingCode = textarea.value;
+                        _this.workCodingCodeDirty = true;
+                    });
+                }
+            },
+            onWorkCodingLanguageChange(){
+                this.applyWorkCodingEditorMode();
+                if(!this.workCodingCodeDirty){
+                    this.setWorkCodingCode(this.workCodingTemplates[this.workCodingLanguage] || '');
+                }
+                this.clearWorkCodingResult();
+            },
+            clearWorkCodingResult(){
+                this.workCodingOutputText = '';
+                this.workCodingErrorMessage = '';
+                this.workCodingLastExitCode = null;
+                this.workCodingLastSignal = '';
+            },
+            resetWorkCoding(){
+                this.workCodingCodeDirty = false;
+                this.setWorkCodingCode(this.workCodingTemplates[this.workCodingLanguage] || '');
+                this.clearWorkCodingResult();
+            },
+            runWorkCoding(){
+                if(this.workCodingRunning){
+                    return;
+                }
+                this.workCodingRunning = true;
+                this.clearWorkCodingResult();
+
+                try{
+                    if(this.workCodingEditor && typeof this.workCodingEditor.getValue === 'function'){
+                        this.workCodingCode = this.workCodingEditor.getValue();
+                    }else{
+                        let ta = document.getElementById('workCodingEditor');
+                        if(ta){
+                            this.workCodingCode = ta.value;
+                        }
+                    }
+                }catch(e){
+                }
+
+                let payload = {
+                    language: this.workCodingLanguage,
+                    code: this.workCodingCode
+                };
+
+                axios.post('/api/teaching/code/run', payload, { timeout: 30000 }).then((res) => {
+                    let data = res && res.data ? res.data : {};
+                    if(!data || typeof data.code === 'undefined'){
+                        this.workCodingErrorMessage = '运行失败：响应格式错误';
+                        return;
+                    }
+                    if(data.code !== 0){
+                        this.workCodingErrorMessage = data.msg || '运行失败';
+                        return;
+                    }
+                    let result = data.result ? data.result : {};
+                    let parts = [];
+                    if(result.stdout){
+                        parts.push(result.stdout);
+                    }
+                    if(result.stderr){
+                        if(parts.length) parts.push('');
+                        parts.push(result.stderr);
+                    }
+                    if(result.timeout){
+                        if(parts.length) parts.push('');
+                        parts.push('--- timeout ---');
+                    }
+                    if(typeof result.durationMs !== 'undefined' && result.durationMs !== null){
+                        if(parts.length) parts.push('');
+                        parts.push('durationMs: ' + result.durationMs);
+                    }
+                    this.workCodingOutputText = parts.join('\n');
+                    this.workCodingLastExitCode = typeof result.exitCode !== 'undefined' ? result.exitCode : null;
+                    this.workCodingLastSignal = '';
+                }).catch((err) => {
+                    let msg = (err && err.message) ? err.message : '运行失败';
+                    if(err && err.response && err.response.data){
+                        try{
+                            msg = JSON.stringify(err.response.data);
+                        }catch(e){
+                        }
+                    }
+                    this.workCodingErrorMessage = msg;
+                }).finally(() => {
+                    this.workCodingRunning = false;
+                });
+            },
+            runWorkCodingAiAnswer(){
+                if(this.workCodingAiRunning){
+                    return;
+                }
+                this.workCodingAiRunning = true;
+                this.workCodingAiErrorMessage = '';
+                this.workCodingAiResult = '';
+
+                try{
+                    if(this.workCodingEditor && typeof this.workCodingEditor.getValue === 'function'){
+                        this.workCodingCode = this.workCodingEditor.getValue();
+                    }else{
+                        let ta = document.getElementById('workCodingEditor');
+                        if(ta){
+                            this.workCodingCode = ta.value;
+                        }
+                    }
+                }catch(e){
+                }
+
+                let payload = {
+                    language: this.workCodingLanguage,
+                    code: this.workCodingCode,
+                    problemText: this.workCodingProblemText
+                };
+
+                axios.post('http://localhost:10095/ai/answer', payload, { timeout: 60000 }).then((res) => {
+                    let data = res && res.data ? res.data : null;
+                    if(data && typeof data.code !== 'undefined'){
+                        if(data.code !== 0){
+                            this.workCodingAiErrorMessage = data.msg || '智能辅导失败';
+                            return;
+                        }
+                        let result = (typeof data.result !== 'undefined') ? data.result : '';
+                        if(result && typeof result === 'object'){
+                            if(typeof result.answer === 'string'){
+                                this.workCodingAiResult = result.answer;
+                                return;
+                            }
+                            if(typeof result.content === 'string'){
+                                this.workCodingAiResult = result.content;
+                                return;
+                            }
+                            this.workCodingAiResult = JSON.stringify(result);
+                            return;
+                        }
+                        if(typeof result === 'string'){
+                            this.workCodingAiResult = result;
+                            return;
+                        }
+                        this.workCodingAiResult = '';
+                        return;
+                    }
+                    if(typeof data === 'string'){
+                        this.workCodingAiResult = data;
+                        return;
+                    }
+                    this.workCodingAiResult = data ? JSON.stringify(data) : '';
+                }).catch((err) => {
+                    let msg = (err && err.message) ? err.message : '智能辅导失败';
+                    if(err && err.response && err.response.data){
+                        try{
+                            msg = JSON.stringify(err.response.data);
+                        }catch(e){
+                        }
+                    }
+                    this.workCodingAiErrorMessage = msg;
+                }).finally(() => {
+                    this.workCodingAiRunning = false;
+                });
+            },
+            openWork(w){
+                this.currentWork = w || null;
+                let q = (w && (w.question || w.workQuestion)) ? (w.question || w.workQuestion) : '';
+                if(!q){
+                    q = (w && w.workTitle) ? w.workTitle : '';
+                }
+                this.workCodingProblemText = q;
+                if(!this.workCodingCode){
+                    this.workCodingCode = this.workCodingTemplates[this.workCodingLanguage] || '';
+                }
+                this.workCodingAiResult = '';
+                this.workCodingAiErrorMessage = '';
+                try{
+                    $('#workCodingModal').modal('show');
+                }catch(e){
+                }
+            },
+            submitWorkRecord(){
+                if(this.workCodingSubmitRunning){
+                    return;
+                }
+
+                let activeUser;
+                try{
+                    activeUser = getActiveUser();
+                }catch(e){
+                    activeUser = null;
+                }
+                if(activeUser === undefined){
+                    try{ showlogin(); }catch(e){}
+                    return;
+                }
+                if(!activeUser){
+                    try{ showlogin(); }catch(e){}
+                    return;
+                }
+
+                if(!this.currentWork){
+                    if(this.$message && this.$message.warning){
+                        this.$message.warning('请先选择一个作业');
+                    }else{
+                        alert('请先选择一个作业');
+                    }
+                    return;
+                }
+
+                let workId = this.currentWork.workId || this.currentWork.id || this.currentWork.work_id;
+                let teachplanId = this.currentWork.teachplanId || this.currentWork.teachPlanId || this.currentWork.teachplan_id || this.currentWork.teach_plan_id;
+                if(!workId || !teachplanId){
+                    if(this.$message && this.$message.warning){
+                        this.$message.warning('作业信息不完整，缺少workId/teachplanId');
+                    }else{
+                        alert('作业信息不完整，缺少workId/teachplanId');
+                    }
+                    return;
+                }
+
+                try{
+                    if(this.workCodingEditor && typeof this.workCodingEditor.getValue === 'function'){
+                        this.workCodingCode = this.workCodingEditor.getValue();
+                    }else{
+                        let ta = document.getElementById('workCodingEditor');
+                        if(ta){
+                            this.workCodingCode = ta.value;
+                        }
+                    }
+                }catch(e){
+                }
+
+                let username = activeUser.username || activeUser.userName || activeUser.name || activeUser.userid || '';
+                if(!username){
+                    if(this.$message && this.$message.warning){
+                        this.$message.warning('未获取到当前登录用户');
+                    }else{
+                        alert('未获取到当前登录用户');
+                    }
+                    return;
+                }
+
+                let payload = {
+                    companyId: (function(v){
+                        let n = parseInt(v, 10);
+                        return isNaN(n) ? null : n;
+                    })(this.companyId),
+                    courseId: (function(v){
+                        let n = parseInt(v, 10);
+                        return isNaN(n) ? null : n;
+                    })(this.courseId),
+                    coursePubId: null,
+                    workId: workId,
+                    teachplanId: teachplanId,
+                    username: username,
+                    answer: this.workCodingCode || '',
+                    answerType: 'online_code',
+                    status: '306002'
+                };
+
+                this.workCodingSubmitRunning = true;
+                axios.post('/api/teaching/work/record', payload, { timeout: 20000 }).then(() => {
+                    if(this.$message && this.$message.success){
+                        this.$message.success('提交成功');
+                    }else{
+                        alert('提交成功');
+                    }
+                }).catch((err) => {
+                    let msg = (err && err.message) ? err.message : '提交失败';
+                    if(err && err.response && err.response.data){
+                        try{
+                            msg = JSON.stringify(err.response.data);
+                        }catch(e){
+                        }
+                    }
+                    if(this.$message && this.$message.error){
+                        this.$message.error(msg);
+                    }else{
+                        alert(msg);
+                    }
+                }).finally(() => {
+                    this.workCodingSubmitRunning = false;
+                });
+            },
+            loadWorkList(){
+                this.workListLoading = true;
+
+                this.workList = [];
+                if(!this.canShowWork){
+                    this.workListLoading = false;
+                    return;
+                }
+                if(this.courseId === undefined || this.courseId === null || String(this.courseId) === ''){
+                    this.workListLoading = false;
+                    return;
+                }
+
+                let teachplanReq = requestGet('/api/content/teachplan/' + this.courseId + '/tree-nodes', {}).catch((error) => {
+                    console.error('加载章节树失败:', error);
+                    return [];
+                });
+                let workReq = requestGet('/api/teaching/work/' + this.courseId, {});
+
+                let activeUser;
+                try{
+                    activeUser = getActiveUser();
+                }catch(e){
+                    activeUser = null;
+                }
+                let username = activeUser && (activeUser.username || activeUser.userName || activeUser.name) ? String(activeUser.username || activeUser.userName || activeUser.name) : '';
+                let recordReq = Promise.resolve(null);
+                if(username){
+                    let recordUrl = 'http://localhost:8601/api/teaching/work/record/list';
+                    recordReq = axios.post(recordUrl, {
+                        courseId: this.courseId,
+                        username: username
+                    }, {
+                        params: { pageNo: 1, pageSize: 10000 },
+                        timeout: 20000
+                    }).then((res) => {
+                        return res && res.data ? res.data : null;
+                    }).catch(() => {
+                        return axios.post('/api/teaching/work/record/list', {
+                            courseId: this.courseId,
+                            username: username
+                        }, {
+                            params: { pageNo: 1, pageSize: 10000 },
+                            timeout: 20000
+                        }).then((res) => {
+                            return res && res.data ? res.data : null;
+                        }).catch((error) => {
+                            console.error('加载作业提交记录失败:', error);
+                            return null;
+                        });
+                    });
+                }
+
+                Promise.all([workReq, teachplanReq, recordReq]).then(([workRes, teachplanRes, recordRes]) => {
+                    let teachplanNodes = this.normalizeListResponse(teachplanRes);
+                    let nameMap = this.buildTeachplanNameMap(teachplanNodes);
+
+                    let items = this.normalizeListResponse(workRes);
+                    this.workList = (items || []).map((it) => {
+                        if(!it){
+                            return { teachplanId: '', teachplanName: '', workId: '', workTitle: '' };
+                        }
+                        let tpId = it.teachplanId || it.teachPlanId || it.teachplan_id || it.teach_plan_id || it.chapterId || it.chapter_id || '';
+                        let tpIdKey = (tpId !== undefined && tpId !== null) ? String(tpId) : '';
+                        let mappedName = tpIdKey && nameMap[tpIdKey] ? nameMap[tpIdKey] : '';
+                        let originName = it.teachplanName || it.teachPlanName || it.teachplan_name || it.teach_plan_name || it.pname || '';
+
+                        return {
+                            teachplanId: tpId,
+                            teachplanName: mappedName || originName,
+                            workId: it.workId || it.id || it.work_id || '',
+                            workTitle: it.workTitle || it.title || it.workName || it.work_name || '',
+                            question: it.question || it.workQuestion || it.problem || it.content || ''
+                        };
+                    }).filter((w) => w && (w.workTitle || w.teachplanName || w.teachplanId || w.workId));
+
+                    if(username && recordRes){
+                        let recItems = this.normalizePageItems(recordRes);
+                        let recMap = {};
+                        recItems.forEach((r) => {
+                            if(!r){
+                                return;
+                            }
+                            let rUser = r.username || r.userName || r.name || '';
+                            if(rUser && String(rUser) !== String(username)){
+                                return;
+                            }
+                            let wid = r.workId || r.work_id || r.idWork || '';
+                            let tp = r.teachplanId || r.teachPlanId || r.teachplan_id || r.teach_plan_id || r.chapterId || r.chapter_id || '';
+                            if(!wid || !tp){
+                                return;
+                            }
+                            let key = String(wid) + '_' + String(tp);
+                            let t = r.submitDate || r.createDate || r.create_date || r.changeDate || '';
+                            if(!recMap[key] || (t && String(t) > String(recMap[key]._t || ''))){
+                                r._t = t;
+                                recMap[key] = r;
+                            }
+                        });
+
+                        this.workList = (this.workList || []).map((w) => {
+                            if(!w){
+                                return w;
+                            }
+                            let key = String(w.workId || '') + '_' + String(w.teachplanId || '');
+                            let rec = recMap[key];
+                            if(rec){
+                                w.workRecordStatus = rec.status || '';
+                                w.workRecordId = rec.id || rec.workRecordId || '';
+                                w.correctionDate = rec.correctionDate || '';
+                                w.correctComment = rec.correctComment || '';
+                                w.submitDate = rec.submitDate || rec.createDate || '';
+                            }
+                            return w;
+                        });
+                    }
+
+                    this.workListLoading = false;
+                }).catch((error) => {
+                    this.workListLoading = false;
+                    console.error('加载作业列表失败:', error);
+                });
+            },
+            extractWorkListFromTeachplans(teachplans){
+                if(!teachplans || !Array.isArray(teachplans)){
+                    return [];
+                }
+
+                let result = [];
+                let keySet = {};
+
+                let pushNodeWork = (node) => {
+                    if(!node || !node.work){
+                        return;
+                    }
+
+                    let w = node.work;
+                    let teachplanId = w.teachplanId || node.teachPlanId || node.teachplanId || node.id;
+                    let workId = w.workId || w.id;
+                    let workTitle = w.workTitle || w.title;
+                    if(!teachplanId || !workId){
+                        return;
+                    }
+                    let key = String(teachplanId) + '-' + String(workId);
+                    if(keySet[key]){
+                        return;
+                    }
+                    keySet[key] = true;
+
+                    result.push({
+                        teachplanId: teachplanId,
+                        teachplanName: node.pname || '',
+                        workId: workId,
+                        workTitle: workTitle || ''
+                    });
+                };
+
+                let traverse = (nodes) => {
+                    if(!nodes || !Array.isArray(nodes)){
+                        return;
+                    }
+                    nodes.forEach((n) => {
+                        pushNodeWork(n);
+                        let children = n.teachPlanTreeNodes || n.teachplanTreeNodes;
+                        if(children && Array.isArray(children) && children.length > 0){
+                            traverse(children);
+                        }
+                    });
+                };
+
+                traverse(teachplans);
+                return result;
+            },
             // 计算评论统计数据
             calculateCommentStats(){
                 let items = this.commentList.items;
@@ -769,10 +1526,11 @@
         },
        created() {
 
-           this.courseId = courseId;
-           this.charge = courseCharge;
+           this.courseId = (typeof courseId !== 'undefined') ? courseId : '';
+           this.charge = (typeof courseCharge !== 'undefined') ? courseCharge : '';
            // 初始化星级评分
            this.starScoreWidth = 145 * (1 - this.selectedStarScore / 5);
+           this.workCodingCode = this.workCodingTemplates[this.workCodingLanguage] || '';
 
         },
         mounted(){
@@ -782,8 +1540,34 @@
            if(courseTitle){
                this.courseName = courseTitle.trim();
            }
+           try{
+               var _this = this;
+               $('#workCodingModal').on('shown.bs.modal', function(){
+                   _this.ensureWorkCodingAssetsLoaded().then(function(){
+                       _this.$nextTick(function(){
+                           _this.initWorkCodingEditor();
+                           try{
+                               if(_this.workCodingEditor && typeof _this.workCodingEditor.refresh === 'function'){
+                                   _this.workCodingEditor.refresh();
+                               }
+                           }catch(e){
+                           }
+                       });
+                   }).catch(function(e){
+                       _this.workCodingErrorMessage = (e && e.message) ? e.message : '编辑器资源加载失败';
+                   });
+               });
+               $('#workCodingModal').on('hidden.bs.modal', function(){
+                   _this.currentWork = null;
+                   _this.clearWorkCodingResult();
+                   _this.workCodingAiResult = '';
+                   _this.workCodingAiErrorMessage = '';
+               });
+           }catch(e){
+           }
            // 加载评论列表
            this.loadCommentList(true);
+           this.refreshWorkPermission();
         }
 
     })

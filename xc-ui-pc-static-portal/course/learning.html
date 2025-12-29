@@ -60,8 +60,9 @@
                         <div class="course-nav">
                             <div class="nav-stacked text-center">
                                 <li class="nav"><a href="javascript:;" class="glyphicon glyphicon-list-alt"><span>目录</span></a></li>
-                                <li class="lab-note"><a href="javascript:;" class="glyphicon glyphicon-user"><span>笔记</span></a></li>
-                                <li class="lab-ask"><a href="javascript:;" class="glyphicon glyphicon-cog"><span>问答</span></a></li>
+                                <!-- <li class="lab-note"><a href="javascript:;" class="glyphicon glyphicon-user"><span>笔记</span></a></li> -->
+                                <!-- <li class="lab-ask"><a href="javascript:;" class="glyphicon glyphicon-cog"><span>问答</span></a></li> -->
+                                <li class="lab-work" style="display:none;"><a href="javascript:;" class="glyphicon glyphicon-edit"><span>作业</span></a></li>
                                 <li class="lab-com"><a href="javascript:;" class="glyphicon glyphicon-duplicate"><span>评论</span></a></li>
                             </div>
                         </div>
@@ -425,9 +426,8 @@
                                                     <div class="item-rit">
                                                         <div class="star-show">
                                                             <div class="score" :style="{width: (109 * (1 - ((comment.starRank || 0) / 5))) + 'px'}"><i>{{ comment.starRank || 0 }}</i></div>
-                                                        </div>
-                                                        <div class="showSt">评分 <span>{{ getStarText(comment.starRank) }}</span></div>
                                                     </div>
+                                                    <div class="showSt">评分 <span>{{ getStarText(comment.starRank) }}</span></div>
                                                 </div>
                                                 <div class="cont">{{ comment.commentText }}</div>
                                                 <div class="operation"><span>{{ formatDate(comment.commentDate) }}</span>
@@ -458,6 +458,62 @@
                                         <a href="#" @click="vdPlay(teachplan_second.teachplanMedia)">{{teachplan_second.pname}}</a>
                                     </li>
                                 </div>
+                            </div>
+
+                            <div class="modal fade" id="chapterWorkCodingModal" tabindex="-1" role="dialog" aria-labelledby="chapterWorkCodingModalLabel">
+                              <div class="modal-dialog" role="document" style="width: 92%; max-width: 1200px;">
+                                <div class="modal-content">
+                                  <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <h4 class="modal-title" id="chapterWorkCodingModalLabel">在线编程 - {{ currentChapterWork ? (currentChapterWork.workTitle || '作业') : '作业' }}</h4>
+                                  </div>
+                                  <div class="modal-body" style="padding: 15px;">
+                                    <div class="row">
+                                      <div class="col-md-8">
+                                        <div class="form-inline" style="margin-bottom: 10px;">
+                                          <label style="margin-right: 6px;">语言</label>
+                                          <select class="form-control" v-model="chapterWorkCodingLanguage" @change="onChapterWorkCodingLanguageChange">
+                                            <option value="python">Python</option>
+                                            <option value="java">Java</option>
+                                          </select>
+                                          <button type="button" class="btn btn-primary" style="margin-left: 10px;" :disabled="chapterWorkCodingRunning" @click="runChapterWorkCoding">{{ chapterWorkCodingRunning ? '运行中...' : '运行' }}</button>
+                                          <button type="button" class="btn btn-default" style="margin-left: 6px;" :disabled="chapterWorkCodingRunning" @click="resetChapterWorkCoding">重置代码</button>
+                                          <button type="button" class="btn btn-default" style="margin-left: 6px;" :disabled="chapterWorkCodingRunning" @click="clearChapterWorkCodingResult">清空输出</button>
+                                        </div>
+
+                                        <div style="margin-bottom: 10px;">
+                                          <textarea id="chapterWorkCodingEditor" style="width: 100%; min-height: 360px;"></textarea>
+                                        </div>
+
+                                        <div>
+                                          <div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">
+                                            <span>输出</span>
+                                            <span v-if="chapterWorkCodingLastExitCode !== null" style="float: right;">退出码：{{ chapterWorkCodingLastExitCode }}<span v-if="chapterWorkCodingLastSignal">，信号：{{ chapterWorkCodingLastSignal }}</span></span>
+                                          </div>
+                                          <div style="border: 1px solid #dde2e6; border-radius: 6px; background: #0b1020; color: #e7eefc; padding: 10px; min-height: 220px; overflow: auto; white-space: pre-wrap; word-break: break-word; font-family: Consolas, Menlo, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.5;">{{ chapterWorkCodingOutputText }}</div>
+                                          <div v-if="chapterWorkCodingErrorMessage" style="margin-top: 8px; color: #dc3545;">{{ chapterWorkCodingErrorMessage }}</div>
+                                        </div>
+                                      </div>
+
+                                      <div class="col-md-4">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                          <div style="font-size: 14px; font-weight: 600; color: #495057;">题目描述</div>
+                                          <div>
+                                            <button type="button" class="btn btn-success" :disabled="chapterWorkCodingSubmitRunning" @click="submitChapterWorkRecord">{{ chapterWorkCodingSubmitRunning ? '提交中...' : '提交作业' }}</button>
+                                            <button type="button" class="btn btn-primary" style="margin-left: 6px;" :disabled="chapterWorkCodingAiRunning" @click="runChapterWorkCodingAiAnswer">{{ chapterWorkCodingAiRunning ? '智能辅导中...' : '智能辅导' }}</button>
+                                          </div>
+                                        </div>
+                                        <textarea class="form-control" v-model="chapterWorkCodingProblemText" readonly style="width: 100%; min-height: 590px; resize: vertical; font-family: Consolas, Menlo, Monaco, 'Courier New', monospace; font-size: 13px; line-height: 1.5;" placeholder="题目描述"></textarea>
+                                        <div v-if="chapterWorkCodingAiResult" style="margin-top: 12px;">
+                                          <div style="font-size: 12px; color: #6c757d; margin-bottom: 6px;">智能辅导结果</div>
+                                          <div class="form-control" style="width: 100%; height: auto; min-height: 120px; resize: none; background: #fff; color: #333; overflow: visible; white-space: pre-wrap;" v-text="chapterWorkCodingAiResult"></div>
+                                        </div>
+                                        <div v-if="chapterWorkCodingAiErrorMessage" style="margin-top: 10px; color: #dc3545;">{{ chapterWorkCodingAiErrorMessage }}</div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                         </div>
                     </div>
@@ -899,6 +955,16 @@
                         }, 500);
                     }
                 })
+                // 作业
+                $('.course-nav .lab-work').click(function() {
+                    window.location = '#'
+                    try{
+                        if(typeof learningVm !== 'undefined' && learningVm && typeof learningVm.openChapterWorkCodingModal === 'function'){
+                            learningVm.openChapterWorkCodingModal();
+                        }
+                    }catch(e){
+                    }
+                })
                 //video播放器
                 $('.video-mine .cls-text').click(function() {
 
@@ -927,6 +993,7 @@
             courseId:'',
             teachplanId:'',
             teachplans:[],
+            courseCharge: '',
             videoObject : {
 				container: '#vdplay', //容器的ID或className
 				variable: 'player',//播放函数名称
@@ -939,12 +1006,591 @@
 				// ]
 			},
             player : null,
-            preview:false
+            preview:false,
+            canShowWork: false,
+            currentChapterWork: null,
+            hasChapterWork: false,
+            chapterWorkList: [],
+            chapterWorkCodingLanguage: 'java',
+            chapterWorkCodingCode: '',
+            chapterWorkCodingOutputText: '',
+            chapterWorkCodingRunning: false,
+            chapterWorkCodingErrorMessage: '',
+            chapterWorkCodingLastExitCode: null,
+            chapterWorkCodingLastSignal: '',
+            chapterWorkCodingCodeDirty: false,
+            chapterWorkCodingEditor: null,
+            chapterWorkCodingProgrammaticUpdate: false,
+            chapterWorkCodingProblemText: '',
+            chapterWorkCodingAiResult: '',
+            chapterWorkCodingAiRunning: false,
+            chapterWorkCodingAiErrorMessage: '',
+            chapterWorkCodingSubmitRunning: false,
+            chapterWorkCodingAssetsPromise: null,
+            chapterWorkCodingTemplates: {
+                python: 'print("Hello, world!")\n',
+                java: 'public class Main {\n    public static void main(String[] args) throws Exception {\n        System.out.println("Hello, world!");\n    }\n}\n'
+            }
 
         },
         methods: {
             getTeachplans() {
                
+            },
+
+            normalizeListResponse(res){
+                if(Array.isArray(res)){
+                    return res;
+                }
+                if(!res){
+                    return [];
+                }
+                if(res && Array.isArray(res.items)){
+                    return res.items;
+                }
+                if(res && Array.isArray(res.records)){
+                    return res.records;
+                }
+                if(res && Array.isArray(res.rows)){
+                    return res.rows;
+                }
+                if(res && Array.isArray(res.list)){
+                    return res.list;
+                }
+                if(res && res.data){
+                    return this.normalizeListResponse(res.data);
+                }
+                if(res && res.result){
+                    return this.normalizeListResponse(res.result);
+                }
+                return [];
+            },
+            updateChapterWorkNav(){
+                try{
+                    if(this.canShowWork && this.hasChapterWork){
+                        $('.course-nav .lab-work').css('display', 'block');
+                    }else{
+                        $('.course-nav .lab-work').hide();
+                    }
+                }catch(e){
+                }
+            },
+            refreshWorkPermission(){
+                this.canShowWork = false;
+                this.hasChapterWork = false;
+                this.currentChapterWork = null;
+                this.updateChapterWorkNav();
+
+                if(this.preview){
+                    return;
+                }
+
+                let activeUser;
+                try{
+                    activeUser = getActiveUser();
+                }catch(e){
+                    activeUser = null;
+                }
+                if(!activeUser){
+                    return;
+                }
+
+                if(String(this.courseCharge || '') === '201000'){
+                    this.canShowWork = true;
+                    this.loadChapterWorkForCurrentChapter();
+                    return;
+                }
+
+                requestPost('/api/learning/choosecourse/learnstatus/' + this.courseId).then((res)=>{
+                    if(res && String(res.learnStatus || '') === '702001'){
+                        this.canShowWork = true;
+                        this.loadChapterWorkForCurrentChapter();
+                    }
+                }).catch(() => {});
+            },
+            loadChapterWorkForCurrentChapter(){
+                if(!this.canShowWork){
+                    this.hasChapterWork = false;
+                    this.currentChapterWork = null;
+                    this.updateChapterWorkNav();
+                    return;
+                }
+                if(!this.courseId || !this.teachplanId){
+                    this.hasChapterWork = false;
+                    this.currentChapterWork = null;
+                    this.updateChapterWorkNav();
+                    return;
+                }
+                let loadByCourseIdPath = () => requestGet('/api/teaching/work/' + this.courseId, {});
+                let loadByCourseIdParam = () => requestGet('/api/teaching/work/courseId', { courseId: this.courseId });
+                let loadPromise = loadByCourseIdParam().catch(() => loadByCourseIdPath());
+
+                loadPromise.then((res) => {
+                    let items = this.normalizeListResponse(res);
+                    let tp = String(this.teachplanId).trim();
+                    let filtered = (items || []).filter((it) => {
+                        if(!it){
+                            return false;
+                        }
+                        let itTp = it.teachplanId || it.teachPlanId || it.teachplan_id || it.teach_plan_id || it.chapterId || it.chapter_id || '';
+                        return String(itTp).trim() === tp;
+                    }).map((it) => {
+                        return {
+                            teachplanId: it.teachplanId || it.teachPlanId || it.teachplan_id || it.teach_plan_id || it.chapterId || it.chapter_id || '',
+                            workId: it.workId || it.id || it.work_id || '',
+                            workTitle: it.workTitle || it.title || it.workName || it.work_name || '',
+                            question: it.question || it.workQuestion || it.problem || it.content || ''
+                        };
+                    });
+
+                    if((!filtered || filtered.length === 0) && typeof loadByCourseIdParam === 'function'){
+                        return loadByCourseIdParam().then((res2) => {
+                            let items2 = this.normalizeListResponse(res2);
+                            let filtered2 = (items2 || []).filter((it) => {
+                                if(!it){
+                                    return false;
+                                }
+                                let itTp = it.teachplanId || it.teachPlanId || it.teachplan_id || it.teach_plan_id || it.chapterId || it.chapter_id || '';
+                                return String(itTp).trim() === tp;
+                            }).map((it) => {
+                                return {
+                                    teachplanId: it.teachplanId || it.teachPlanId || it.teachplan_id || it.teach_plan_id || it.chapterId || it.chapter_id || '',
+                                    workId: it.workId || it.id || it.work_id || '',
+                                    workTitle: it.workTitle || it.title || it.workName || it.work_name || '',
+                                    question: it.question || it.workQuestion || it.problem || it.content || ''
+                                };
+                            });
+                            return filtered2;
+                        }).catch(() => filtered);
+                    }
+
+                    return filtered;
+                }).then((finalFiltered) => {
+                    let filtered = finalFiltered || [];
+                    this.chapterWorkList = filtered;
+                    this.currentChapterWork = (filtered && filtered.length > 0) ? filtered[0] : null;
+                    this.hasChapterWork = !!(filtered && filtered.length > 0);
+                    this.updateChapterWorkNav();
+                }).catch((error) => {
+                    this.hasChapterWork = false;
+                    this.currentChapterWork = null;
+                    this.updateChapterWorkNav();
+                    console.error('加载章节作业失败:', error);
+                });
+            },
+            ensureChapterWorkCodingAssetsLoaded(){
+                if(this.chapterWorkCodingAssetsPromise){
+                    return this.chapterWorkCodingAssetsPromise;
+                }
+                this.chapterWorkCodingAssetsPromise = new Promise((resolve, reject) => {
+                    try{
+                        if(typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function'){
+                            resolve(true);
+                            return;
+                        }
+                        let loadCss = (href) => {
+                            try{
+                                if(document.querySelector('link[href="' + href + '"]')){
+                                    return;
+                                }
+                                let link = document.createElement('link');
+                                link.rel = 'stylesheet';
+                                link.href = href;
+                                document.head.appendChild(link);
+                            }catch(e){
+                            }
+                        };
+                        let loadScript = (src) => {
+                            return new Promise((res, rej) => {
+                                try{
+                                    if(document.querySelector('script[src="' + src + '"]')){
+                                        res(true);
+                                        return;
+                                    }
+                                    let s = document.createElement('script');
+                                    s.src = src;
+                                    s.onload = () => res(true);
+                                    s.onerror = () => rej(new Error('load failed: ' + src));
+                                    document.body.appendChild(s);
+                                }catch(e){
+                                    rej(e);
+                                }
+                            });
+                        };
+                        loadCss('/static/css/codemirror/codemirror.min.css');
+                        loadCss('/static/css/codemirror/theme/idea.min.css');
+                        loadScript('/static/js/codemirror/codemirror.min.js')
+                            .then(() => loadScript('/static/js/codemirror/mode/python/python.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/mode/clike/clike.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/edit/matchbrackets.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/edit/closebrackets.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/selection/active-line.min.js'))
+                            .then(() => loadScript('/static/js/codemirror/addon/comment/comment.js'))
+                            .then(() => {
+                                if(typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function'){
+                                    resolve(true);
+                                    return;
+                                }
+                                reject(new Error('CodeMirror not available'));
+                            })
+                            .catch((e) => reject(e));
+                    }catch(e){
+                        reject(e);
+                    }
+                });
+                return this.chapterWorkCodingAssetsPromise;
+            },
+            applyChapterWorkCodingEditorMode(){
+                if(!this.chapterWorkCodingEditor){
+                    return;
+                }
+                if(this.chapterWorkCodingLanguage === 'python'){
+                    this.chapterWorkCodingEditor.setOption('mode', 'python');
+                    return;
+                }
+                if(this.chapterWorkCodingLanguage === 'java'){
+                    this.chapterWorkCodingEditor.setOption('mode', 'text/x-java');
+                    return;
+                }
+            },
+            setChapterWorkCodingCode(newCode){
+                this.chapterWorkCodingProgrammaticUpdate = true;
+                this.chapterWorkCodingCode = newCode;
+                if(this.chapterWorkCodingEditor && typeof this.chapterWorkCodingEditor.setValue === 'function'){
+                    this.chapterWorkCodingEditor.setValue(newCode);
+                }else{
+                    let ta = document.getElementById('chapterWorkCodingEditor');
+                    if(ta){
+                        ta.value = newCode;
+                    }
+                }
+                this.chapterWorkCodingProgrammaticUpdate = false;
+            },
+            initChapterWorkCodingEditor(){
+                let textarea = document.getElementById('chapterWorkCodingEditor');
+                if(!textarea){
+                    return;
+                }
+                if(this.chapterWorkCodingEditor){
+                    try{
+                        this.applyChapterWorkCodingEditorMode();
+                        if(typeof this.chapterWorkCodingEditor.refresh === 'function'){
+                            this.chapterWorkCodingEditor.refresh();
+                        }
+                    }catch(e){
+                    }
+                    return;
+                }
+                if(typeof CodeMirror !== 'undefined' && CodeMirror && typeof CodeMirror.fromTextArea === 'function'){
+                    let _this = this;
+                    this.chapterWorkCodingEditor = CodeMirror.fromTextArea(textarea, {
+                        lineNumbers: true,
+                        theme: 'idea',
+                        indentUnit: 4,
+                        tabSize: 4,
+                        smartIndent: true,
+                        matchBrackets: true,
+                        autoCloseBrackets: true,
+                        styleActiveLine: true,
+                        extraKeys: {
+                            'Ctrl-/': 'toggleComment',
+                            'Cmd-/': 'toggleComment'
+                        },
+                        viewportMargin: Infinity
+                    });
+                    try{
+                        this.chapterWorkCodingEditor.setSize(null, 360);
+                    }catch(e){
+                    }
+                    this.setChapterWorkCodingCode(this.chapterWorkCodingCode || this.chapterWorkCodingTemplates[this.chapterWorkCodingLanguage] || '');
+                    this.applyChapterWorkCodingEditorMode();
+                    this.chapterWorkCodingEditor.on('change', function(cm){
+                        if(_this.chapterWorkCodingProgrammaticUpdate){
+                            return;
+                        }
+                        _this.chapterWorkCodingCode = cm.getValue();
+                        _this.chapterWorkCodingCodeDirty = true;
+                    });
+                }else{
+                    textarea.value = this.chapterWorkCodingCode || this.chapterWorkCodingTemplates[this.chapterWorkCodingLanguage] || '';
+                    let _this = this;
+                    textarea.addEventListener('input', function(){
+                        _this.chapterWorkCodingCode = textarea.value;
+                        _this.chapterWorkCodingCodeDirty = true;
+                    });
+                }
+            },
+            onChapterWorkCodingLanguageChange(){
+                this.applyChapterWorkCodingEditorMode();
+                if(!this.chapterWorkCodingCodeDirty){
+                    this.setChapterWorkCodingCode(this.chapterWorkCodingTemplates[this.chapterWorkCodingLanguage] || '');
+                }
+                this.clearChapterWorkCodingResult();
+            },
+            clearChapterWorkCodingResult(){
+                this.chapterWorkCodingOutputText = '';
+                this.chapterWorkCodingErrorMessage = '';
+                this.chapterWorkCodingLastExitCode = null;
+                this.chapterWorkCodingLastSignal = '';
+            },
+            resetChapterWorkCoding(){
+                this.chapterWorkCodingCodeDirty = false;
+                this.setChapterWorkCodingCode(this.chapterWorkCodingTemplates[this.chapterWorkCodingLanguage] || '');
+                this.clearChapterWorkCodingResult();
+            },
+            runChapterWorkCoding(){
+                if(this.chapterWorkCodingRunning){
+                    return;
+                }
+                this.chapterWorkCodingRunning = true;
+                this.clearChapterWorkCodingResult();
+                try{
+                    if(this.chapterWorkCodingEditor && typeof this.chapterWorkCodingEditor.getValue === 'function'){
+                        this.chapterWorkCodingCode = this.chapterWorkCodingEditor.getValue();
+                    }else{
+                        let ta = document.getElementById('chapterWorkCodingEditor');
+                        if(ta){
+                            this.chapterWorkCodingCode = ta.value;
+                        }
+                    }
+                }catch(e){
+                }
+                let payload = {
+                    language: this.chapterWorkCodingLanguage,
+                    code: this.chapterWorkCodingCode
+                };
+                axios.post('/api/teaching/code/run', payload, { timeout: 30000 }).then((res) => {
+                    let data = res && res.data ? res.data : {};
+                    if(!data || typeof data.code === 'undefined'){
+                        this.chapterWorkCodingErrorMessage = '运行失败：响应格式错误';
+                        return;
+                    }
+                    if(data.code !== 0){
+                        this.chapterWorkCodingErrorMessage = data.msg || '运行失败';
+                        return;
+                    }
+                    let result = data.result ? data.result : {};
+                    let parts = [];
+                    if(result.stdout){
+                        parts.push(result.stdout);
+                    }
+                    if(result.stderr){
+                        if(parts.length) parts.push('');
+                        parts.push(result.stderr);
+                    }
+                    if(result.timeout){
+                        if(parts.length) parts.push('');
+                        parts.push('--- timeout ---');
+                    }
+                    if(typeof result.durationMs !== 'undefined' && result.durationMs !== null){
+                        if(parts.length) parts.push('');
+                        parts.push('durationMs: ' + result.durationMs);
+                    }
+                    this.chapterWorkCodingOutputText = parts.join('\n');
+                    this.chapterWorkCodingLastExitCode = typeof result.exitCode !== 'undefined' ? result.exitCode : null;
+                    this.chapterWorkCodingLastSignal = '';
+                }).catch((err) => {
+                    let msg = (err && err.message) ? err.message : '运行失败';
+                    if(err && err.response && err.response.data){
+                        try{
+                            msg = JSON.stringify(err.response.data);
+                        }catch(e){
+                        }
+                    }
+                    this.chapterWorkCodingErrorMessage = msg;
+                }).finally(() => {
+                    this.chapterWorkCodingRunning = false;
+                });
+            },
+            runChapterWorkCodingAiAnswer(){
+                if(this.chapterWorkCodingAiRunning){
+                    return;
+                }
+                this.chapterWorkCodingAiRunning = true;
+                this.chapterWorkCodingAiErrorMessage = '';
+                this.chapterWorkCodingAiResult = '';
+                try{
+                    if(this.chapterWorkCodingEditor && typeof this.chapterWorkCodingEditor.getValue === 'function'){
+                        this.chapterWorkCodingCode = this.chapterWorkCodingEditor.getValue();
+                    }else{
+                        let ta = document.getElementById('chapterWorkCodingEditor');
+                        if(ta){
+                            this.chapterWorkCodingCode = ta.value;
+                        }
+                    }
+                }catch(e){
+                }
+                let payload = {
+                    language: this.chapterWorkCodingLanguage,
+                    code: this.chapterWorkCodingCode,
+                    problemText: this.chapterWorkCodingProblemText
+                };
+                axios.post('http://localhost:10095/ai/answer', payload, { timeout: 60000 }).then((res) => {
+                    let data = res && res.data ? res.data : null;
+                    if(data && typeof data.code !== 'undefined'){
+                        if(data.code !== 0){
+                            this.chapterWorkCodingAiErrorMessage = data.msg || '智能辅导失败';
+                            return;
+                        }
+                        let result = (typeof data.result !== 'undefined') ? data.result : '';
+                        if(result && typeof result === 'object'){
+                            if(typeof result.answer === 'string'){
+                                this.chapterWorkCodingAiResult = result.answer;
+                                return;
+                            }
+                            if(typeof result.content === 'string'){
+                                this.chapterWorkCodingAiResult = result.content;
+                                return;
+                            }
+                            this.chapterWorkCodingAiResult = JSON.stringify(result);
+                            return;
+                        }
+                        if(typeof result === 'string'){
+                            this.chapterWorkCodingAiResult = result;
+                            return;
+                        }
+                        this.chapterWorkCodingAiResult = '';
+                        return;
+                    }
+                    if(typeof data === 'string'){
+                        this.chapterWorkCodingAiResult = data;
+                        return;
+                    }
+                    this.chapterWorkCodingAiResult = data ? JSON.stringify(data) : '';
+                }).catch((err) => {
+                    let msg = (err && err.message) ? err.message : '智能辅导失败';
+                    if(err && err.response && err.response.data){
+                        try{
+                            msg = JSON.stringify(err.response.data);
+                        }catch(e){
+                        }
+                    }
+                    this.chapterWorkCodingAiErrorMessage = msg;
+                }).finally(() => {
+                    this.chapterWorkCodingAiRunning = false;
+                });
+            },
+            submitChapterWorkRecord(){
+                if(this.chapterWorkCodingSubmitRunning){
+                    return;
+                }
+
+                let activeUser;
+                try{
+                    activeUser = getActiveUser();
+                }catch(e){
+                    activeUser = null;
+                }
+                if(activeUser === undefined){
+                    try{ showlogin(); }catch(e){}
+                    return;
+                }
+                if(!activeUser){
+                    try{ showlogin(); }catch(e){}
+                    return;
+                }
+
+                let w = this.currentChapterWork;
+                if(!w){
+                    if(this.$message && this.$message.warning){
+                        this.$message.warning('请先选择一个作业');
+                    }else{
+                        alert('请先选择一个作业');
+                    }
+                    return;
+                }
+
+                let workId = w.workId || w.id || w.work_id;
+                let teachplanId = w.teachplanId || w.teachPlanId || w.teachplan_id || w.teach_plan_id || this.teachplanId;
+                if(!workId || !teachplanId){
+                    if(this.$message && this.$message.warning){
+                        this.$message.warning('作业信息不完整，缺少workId/teachplanId');
+                    }else{
+                        alert('作业信息不完整，缺少workId/teachplanId');
+                    }
+                    return;
+                }
+
+                try{
+                    if(this.chapterWorkCodingEditor && typeof this.chapterWorkCodingEditor.getValue === 'function'){
+                        this.chapterWorkCodingCode = this.chapterWorkCodingEditor.getValue();
+                    }else{
+                        let ta = document.getElementById('chapterWorkCodingEditor');
+                        if(ta){
+                            this.chapterWorkCodingCode = ta.value;
+                        }
+                    }
+                }catch(e){
+                }
+
+                let username = activeUser.username || activeUser.userName || activeUser.name || activeUser.userid || '';
+                if(!username){
+                    if(this.$message && this.$message.warning){
+                        this.$message.warning('未获取到当前登录用户');
+                    }else{
+                        alert('未获取到当前登录用户');
+                    }
+                    return;
+                }
+
+                let payload = {
+                    companyId: null,
+                    courseId: (function(v){
+                        let n = parseInt(v, 10);
+                        return isNaN(n) ? null : n;
+                    })(this.courseId),
+                    coursePubId: null,
+                    workId: workId,
+                    teachplanId: teachplanId,
+                    username: username,
+                    answer: this.chapterWorkCodingCode || '',
+                    answerType: 'online_code',
+                    status: '306002'
+                };
+
+                this.chapterWorkCodingSubmitRunning = true;
+                axios.post('/api/teaching/work/record', payload, { timeout: 20000 }).then(() => {
+                    if(this.$message && this.$message.success){
+                        this.$message.success('提交成功');
+                    }else{
+                        alert('提交成功');
+                    }
+                }).catch((err) => {
+                    let msg = (err && err.message) ? err.message : '提交失败';
+                    if(err && err.response && err.response.data){
+                        try{
+                            msg = JSON.stringify(err.response.data);
+                        }catch(e){
+                        }
+                    }
+                    if(this.$message && this.$message.error){
+                        this.$message.error(msg);
+                    }else{
+                        alert(msg);
+                    }
+                }).finally(() => {
+                    this.chapterWorkCodingSubmitRunning = false;
+                });
+            },
+            openChapterWorkCodingModal(){
+                if(!this.hasChapterWork){
+                    return;
+                }
+                let w = this.currentChapterWork;
+                let q = (w && (w.question || w.workQuestion)) ? (w.question || w.workQuestion) : '';
+                if(!q){
+                    q = (w && w.workTitle) ? w.workTitle : '作业';
+                }
+                this.chapterWorkCodingProblemText = q;
+                if(!this.chapterWorkCodingCode){
+                    this.chapterWorkCodingCode = this.chapterWorkCodingTemplates[this.chapterWorkCodingLanguage] || '';
+                }
+                this.chapterWorkCodingAiResult = '';
+                this.chapterWorkCodingAiErrorMessage = '';
+                try{
+                    $('#chapterWorkCodingModal').modal('show');
+                }catch(e){
+                }
             },
            
            
@@ -976,6 +1622,10 @@
             vdPlay(mediaFile) {
                 
                 if(mediaFile && mediaFile.mediaId){
+                    if(mediaFile.teachplanId !== undefined && mediaFile.teachplanId !== null && String(mediaFile.teachplanId) !== ''){
+                        this.teachplanId = mediaFile.teachplanId;
+                        this.loadChapterWorkForCurrentChapter();
+                    }
                     //获取视频
                     requestGetMeidaInfo(mediaFile.mediaId,mediaFile.teachplanId,this.courseId).then(res=>{
                         if(res&&res.result){
@@ -1026,14 +1676,21 @@
             this.teachplanId = chapter;
         }
         this.courseId = id;
+        this.chapterWorkCodingCode = this.chapterWorkCodingTemplates[this.chapterWorkCodingLanguage] || '';
+        this.canShowWork = false;
+        this.hasChapterWork = false;
+        this.currentChapterWork = null;
+        this.updateChapterWorkNav();
         requestGetCourseInfo(this.courseId).then(res=>{
               this.teachplans = res.teachplans;
               console.log(res)
               document.getElementById("courseNameText").innerHTML=res.courseBase.name;
+              this.courseCharge = res && res.courseBase && res.courseBase.charge !== undefined && res.courseBase.charge !== null ? String(res.courseBase.charge) : '';
               if(typeof commentVm !== 'undefined' && commentVm){
                   commentVm.courseName = res.courseBase.name;
                   commentVm.charge = res.courseBase.charge;
               }
+              this.refreshWorkPermission();
               //播放第一个视频
               this.firstPlay(this.teachplans,this.teachplanId)
           }).catch(err => {
@@ -1047,7 +1704,31 @@
         },
         mounted(){
 
-       
+           try{
+               var _this = this;
+               $('#chapterWorkCodingModal').on('shown.bs.modal', function(){
+                   _this.ensureChapterWorkCodingAssetsLoaded().then(function(){
+                       _this.$nextTick(function(){
+                           _this.initChapterWorkCodingEditor();
+                           try{
+                               if(_this.chapterWorkCodingEditor && typeof _this.chapterWorkCodingEditor.refresh === 'function'){
+                                   _this.chapterWorkCodingEditor.refresh();
+                               }
+                           }catch(e){
+                           }
+                       });
+                   }).catch(function(e){
+                       _this.chapterWorkCodingErrorMessage = (e && e.message) ? e.message : '编辑器资源加载失败';
+                   });
+               });
+               $('#chapterWorkCodingModal').on('hidden.bs.modal', function(){
+                   _this.clearChapterWorkCodingResult();
+                   _this.chapterWorkCodingAiResult = '';
+                   _this.chapterWorkCodingAiErrorMessage = '';
+               });
+           }catch(e){
+           }
+        
         }
     })
 

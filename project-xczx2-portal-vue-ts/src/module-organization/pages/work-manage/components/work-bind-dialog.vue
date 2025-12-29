@@ -344,7 +344,8 @@ export default class WorkBindDialog extends Vue {
     try {
       await workAssociation(
         this.selectedTeachplanId,
-        this.workId
+        this.workId,
+        this.bindForm.courseId
       )
 
       this.$message.success('绑定成功')

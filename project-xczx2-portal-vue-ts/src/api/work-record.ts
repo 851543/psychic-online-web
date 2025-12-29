@@ -1,7 +1,6 @@
 import { createAPI } from '@/utils/request'
 import {
   IWorkRecordPageVO,
-  IWorkRecOverallDTO,
   IWorkRecordDTO
 } from '@/entity/work-record-page-list'
 
@@ -18,7 +17,7 @@ export async function getWorkRecordPageList(
   body: any
 ): Promise<IWorkRecordPageVO> {
   const { data } = await createAPI(
-    '/teaching/work-record/list',
+    '/teaching/work/record/list',
     'post',
     params,
     body
@@ -26,24 +25,13 @@ export async function getWorkRecordPageList(
   return data
 }
 
-// 作业批阅详情
-export async function getWorkRecordReadOverAll(
-  courseWorkId: number
-): Promise<IWorkRecOverallDTO> {
-  const { data } = await createAPI(
-    `/teaching/work-record/read-over-all/${courseWorkId}`,
-    'get'
-  )
-  return data
-}
-
 // 批改作业
 export async function correctionWorkRecord(body: any): Promise<IWorkRecordDTO> {
   const { data } = await createAPI(
-    '/teaching/work-record/correction',
-    'put',
-    null,
-    body
-  )
-  return data
+      '/teaching/work/record/correction',
+      'put',
+      null,
+      body
+    )
+    return data
 }
